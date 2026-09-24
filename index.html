@@ -877,7 +877,6 @@ function mostrarResultado(d) {
 
   const siguiente = NIVELES[NIVELES.indexOf(nivel) + 1];
   const aprobo = d.condicion === "Aprobado";
-  const desde = fechaCorta(new Date(new Date(d.fin).getTime() + CONFIG.ESPERA_HORAS * 3600 * 1000));
   const titulo = aprobo ? "¡Felicitaciones, " + d.postulante.nombre.split(" ")[0] + "!" : "Esta vez no alcanzó";
   const mensaje = aprobo
     ? (siguiente
@@ -886,7 +885,7 @@ function mostrarResultado(d) {
     : (base === "salida" || base === "abandono"
         ? "El examen se cerró porque saliste de la ventana. "
         : base === "tiempo" ? "Se terminó el tiempo. " : "") +
-      "No te desanimes: repasá el manual y volvé a intentarlo desde el " + desde + ".";
+      "No te desanimes: repasá el manual y volvé a intentarlo.";
 
   const r = $("resultado");
   r.classList.remove("oculto");
