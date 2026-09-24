@@ -182,7 +182,7 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
 
         <div class="campo"><label for="f_nombre">Nombre y apellido</label><input id="f_nombre" autocomplete="name"></div>
         <div class="campo"><label for="f_correo">Correo</label><input id="f_correo" type="email" autocomplete="email"></div>
-        <div class="campo"><label for="f_local">Local</label><input id="f_local"></div>
+        <div class="campo"><label for="f_local">Local</label><input id="f_local" list="lista_locales"><datalist id="lista_locales"></datalist></div>
 
         <p class="gris" style="font-size:.85rem;margin-top:1.5rem">Al comenzar se activa la pantalla completa y el control de salida.</p>
         <button class="btn" id="btnComenzar" style="margin-top:.5rem">Comenzar examen</button>
@@ -223,6 +223,8 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
 const CONFIG = {
   SALIDAS_PERMITIDAS: 0,    // 0 = cierra al primer intento de salir. 1 = un aviso y recién a la segunda cierra.
   PANTALLA_COMPLETA: true,  // pide fullscreen al comenzar; salir de fullscreen cuenta como salida
+  MOSTRAR_DETALLE: false,   // true = el postulante ve pregunta por pregunta qué respondió bien o mal
+  LOCALES: [],              // p.ej. ["Caseros 2", "Lavalle 2"]. Vacío = campo de texto libre.
   WEBHOOK_URL: null,        // p.ej. "https://n8n.tu-dominio.com/webhook/examen". null = no envía.
   // Progreso por DNI. Con Supabase configurado el progreso es compartido entre dispositivos.
   // Sin Supabase se guarda solo en este navegador (sirve para probar, no para producción).
@@ -421,6 +423,16 @@ function mezclarExamen(preguntas) {
     const orden = mezclar(p.opciones.map((_, i) => i));
     return { ...p, opciones: orden.map((i) => p.opciones[i]), correcta: orden.indexOf(p.correcta) };
   });
+}
+
+if (CONFIG.LOCALES.length) {
+  const sel = document.createElement("select");
+  sel.id = "f_local";
+  sel.innerHTML = '<option value="">Elegí tu local</option>' +
+    CONFIG.LOCALES.map((l) => "<option></option>").join("");
+  CONFIG.LOCALES.forEach((l, i) => { sel.options[i + 1].textContent = l; sel.options[i + 1].value = l; });
+  $("f_local").replaceWith(sel);
+  $("lista_locales").remove();
 }
 
 function limpiarDni(v) { return String(v).replace(/\D/g, ""); }
@@ -776,6 +788,12 @@ function armarPayload() {
 
 function enviar(payload) {
   guardarLocal(payload);
+  // Historial local para admin.html mientras no esté conectado Supabase.
+  try {
+    const hist = JSON.parse(localStorage.getItem("resultados")) || [];
+    hist.push(payload);
+    localStorage.setItem("resultados", JSON.stringify(hist));
+  } catch (e) { /* sin almacenamiento local */ }
   const cuerpo = JSON.stringify(payload);
   if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
     try {
@@ -823,7 +841,7 @@ function mostrarResultado(d) {
     "<h1>" + (TITULOS[base] || "Examen cerrado") + "</h1>" +
     '<p class="gris">DNI ' + d.dni + " · " + d.postulante.nombre + " · " + d.postulante.local + " · Nivel " + d.postulante.puesto + "</p>" +
     '<div class="puntaje" style="margin-top:1.5rem">' + (d.porcentaje === null ? "S/D" : d.porcentaje + "%") + "</div>" +
-    '<p class="gris">' + d.aciertos + " de " + d.evaluadas + " preguntas evaluadas · " +
+    '<p class="gris">' + d.aciertos + " correctas de " + d.evaluadas + " · " +
       d.respondidas + " de " + d.total_preguntas + " respondidas" +
       (d.sin_clave ? " · " + d.sin_clave + " sin clave cargada (S/D)" : "") + "</p>" +
     '<p style="font-weight:600;margin-top:.5rem">Condición: ' + d.condicion + "</p>" +
@@ -832,9 +850,7 @@ function mostrarResultado(d) {
     (d.condicion !== "Aprobado"
       ? '<p class="gris">Podés volver a rendir este nivel en ' + CONFIG.ESPERA_HORAS + " hs, desde el " +
         fechaCorta(new Date(new Date(d.fin).getTime() + CONFIG.ESPERA_HORAS * 3600 * 1000)) + ".</p>" : "") +
-    '<div class="detalle">' + filas + "</div>" +
-    '<p class="gris" style="margin-top:1.5rem;font-size:.85rem">Resultado en JSON para cargar en la base:</p>' +
-    "<textarea readonly>" + JSON.stringify(d, null, 2) + "</textarea>";
+    (CONFIG.MOSTRAR_DETALLE ? '<div class="detalle">' + filas + "</div>" : "");
 }
 </script>
 </body>

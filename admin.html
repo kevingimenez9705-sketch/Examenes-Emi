@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de exámenes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --tinta:#1E211F; --papel:#FFFFFF; --fondo:#ECEFE9; --verde:#0E6E43; --verde-suave:#E2EFE7;
+  --alerta:#B22B1F; --alerta-suave:#FBEAE8; --gris:#6B726D; --linea:#D6DBD4; --riel:#E4E8E2;
+  --radio:10px; --ancho:72rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--fondo); color:var(--tinta);
+  font-family:"Instrument Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--verde);outline-offset:2px}
+main{max-width:var(--ancho);margin:0 auto;padding:1.5rem 1rem 4rem}
+h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}
+h2{font-size:1rem;font-weight:600;margin-bottom:.75rem}
+.gris{color:var(--gris)}
+.cabecera{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.filtros{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem}
+.filtros select,.filtros input{padding:.5rem .7rem;background:var(--papel);border:1px solid var(--linea);border-radius:8px;min-width:10rem}
+.btn{padding:.5rem 1rem;background:var(--papel);border:1px solid var(--linea);border-radius:8px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--gris)}
+.btn.pri{background:var(--verde);border-color:var(--verde);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.25rem}
+.kpi{background:var(--papel);border:1px solid var(--linea);border-radius:var(--radio);padding:1rem}
+.kpi .v{font-size:1.9rem;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .l{font-size:.8rem;color:var(--gris)}
+.grilla{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem}
+.panel{background:var(--papel);border:1px solid var(--linea);border-radius:var(--radio);padding:1rem;min-width:0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+th,td{padding:.5rem .5rem;border-bottom:1px solid var(--linea);text-align:left;white-space:nowrap}
+th{font-weight:600;color:var(--gris);font-size:.75rem;text-transform:uppercase;letter-spacing:.03em}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:none}
+.etq{font-weight:600;font-size:.72rem;padding:.1rem .45rem;border-radius:4px}
+.etq.ok{background:var(--verde-suave);color:var(--verde)}
+.etq.mal{background:var(--alerta-suave);color:var(--alerta)}
+/* Barras de % de error por pregunta (una sola serie) */
+.barras{display:flex;flex-direction:column;gap:.6rem}
+.barra{display:grid;grid-template-columns:1fr 3rem;gap:.25rem .75rem;align-items:center;position:relative}
+.barra .txt{font-size:.82rem;grid-column:1 / -1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra .riel{height:8px;background:var(--riel);border-radius:4px;overflow:hidden}
+.barra .fill{height:100%;background:var(--alerta);border-radius:0 4px 4px 0}
+.barra .pct{font-size:.82rem;text-align:right;font-variant-numeric:tabular-nums;color:var(--tinta)}
+.barra:hover .riel{outline:1px solid var(--gris)}
+#tip{position:fixed;pointer-events:none;background:var(--tinta);color:#fff;font-size:.78rem;padding:.4rem .6rem;border-radius:6px;max-width:22rem;display:none;z-index:20}
+.vacio{padding:2rem;text-align:center;color:var(--gris)}
+dialog{border:none;border-radius:var(--radio);padding:1.25rem;max-width:36rem;width:calc(100% - 2rem)}
+dialog textarea{width:100%;height:12rem;margin:.75rem 0;padding:.6rem;border:1px solid var(--linea);border-radius:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem}
+@media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}.grilla{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <div class="cabecera">
+    <div>
+      <h1>Panel de exámenes</h1>
+      <p class="gris" id="fuente"></p>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn" id="btnImportar">Importar JSON</button>
+      <button class="btn pri" id="btnCsv">Exportar CSV</button>
+    </div>
+  </div>
+
+  <div class="filtros">
+    <select id="fNivel"><option value="">Todos los niveles</option></select>
+    <select id="fLocal"><option value="">Todos los locales</option></select>
+    <input id="fBuscar" placeholder="Buscar DNI o nombre">
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kIntentos">0</div><div class="l">Intentos</div></div>
+    <div class="kpi"><div class="v" id="kPersonas">0</div><div class="l">Personas (DNI)</div></div>
+    <div class="kpi"><div class="v" id="kAprob">—</div><div class="l">Tasa de aprobación</div></div>
+    <div class="kpi"><div class="v" id="kCierres">0</div><div class="l">Cerrados por salir de la ventana</div></div>
+  </div>
+
+  <div class="grilla">
+    <section class="panel">
+      <h2>Resultados por nivel</h2>
+      <div class="scroll"><table id="tNiveles"></table></div>
+    </section>
+    <section class="panel">
+      <h2>Preguntas con más errores</h2>
+      <div class="barras" id="barras"></div>
+    </section>
+  </div>
+
+  <section class="panel" style="margin-bottom:.75rem">
+    <h2>Progreso por DNI</h2>
+    <div class="scroll"><table id="tPersonas"></table></div>
+  </section>
+
+  <section class="panel">
+    <h2>Todos los intentos</h2>
+    <div class="scroll"><table id="tIntentos"></table></div>
+  </section>
+</main>
+
+<div id="tip" role="tooltip"></div>
+
+<dialog id="dlg">
+  <h2>Importar resultados</h2>
+  <p class="gris" style="font-size:.85rem">Pegá un JSON con uno o varios resultados (por ejemplo, exportados desde n8n).</p>
+  <textarea id="txtImport"></textarea>
+  <div style="display:flex;gap:.5rem;justify-content:flex-end">
+    <button class="btn" id="btnCancelar">Cancelar</button>
+    <button class="btn pri" id="btnConfirmar">Importar</button>
+  </div>
+</dialog>
+
+<script>
+const NIVELES = [
+  { id:"entrenador", nombre:"Entrenador" },
+  { id:"encargado",  nombre:"Encargado" },
+  { id:"gerente",    nombre:"Gerente" }
+];
+const NOMBRE_NIVEL = Object.fromEntries(NIVELES.map((n) => [n.id, n.nombre]));
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const pct = (a, b) => (b ? Math.round((a / b) * 100) + "%" : "—");
+const fecha = (iso) => iso ? new Date(iso).toLocaleString("es-AR", { day:"2-digit", month:"2-digit", year:"2-digit", hour:"2-digit", minute:"2-digit", hourCycle:"h23" }) : "—";
+
+/* ===========================================================
+   DATOS
+   Mientras no esté Supabase, lee el historial que guarda index.html
+   en este navegador y lo que se importe a mano.
+   =========================================================== */
+function leerResultados() {
+  try { return JSON.parse(localStorage.getItem("resultados")) || []; } catch (e) { return []; }
+}
+function guardarResultados(lista) {
+  try { localStorage.setItem("resultados", JSON.stringify(lista)); } catch (e) { alert("No se pudo guardar en este navegador."); }
+}
+let datos = leerResultados();
+
+NIVELES.forEach((n) => $("fNivel").insertAdjacentHTML("beforeend", '<option value="' + n.id + '">' + n.nombre + "</option>"));
+function pintarLocales() {
+  const actual = $("fLocal").value;
+  const locales = [...new Set(datos.map((d) => d.postulante?.local).filter(Boolean))].sort();
+  $("fLocal").innerHTML = '<option value="">Todos los locales</option>' +
+    locales.map((l) => '<option value="' + esc(l) + '">' + esc(l) + "</option>").join("");
+  $("fLocal").value = locales.includes(actual) ? actual : "";
+}
+
+function filtrados() {
+  const nivel = $("fNivel").value, local = $("fLocal").value, q = $("fBuscar").value.trim().toLowerCase();
+  return datos.filter((d) =>
+    (!nivel || d.nivel === nivel) &&
+    (!local || d.postulante?.local === local) &&
+    (!q || String(d.dni).includes(q) || String(d.postulante?.nombre || "").toLowerCase().includes(q)));
+}
+
+/* ===========================================================
+   RENDER
+   =========================================================== */
+function pintar() {
+  const f = filtrados();
+  $("fuente").textContent = datos.length
+    ? datos.length + " intentos cargados en este navegador"
+    : "Sin datos todavía. Se cargan al rendir desde este navegador o con Importar JSON.";
+
+  const aprob = f.filter((d) => d.condicion === "Aprobado").length;
+  $("kIntentos").textContent = f.length;
+  $("kPersonas").textContent = new Set(f.map((d) => d.dni)).size;
+  $("kAprob").textContent = pct(aprob, f.length);
+  $("kCierres").textContent = f.filter((d) => String(d.motivo_cierre).startsWith("salida") || d.motivo_cierre === "abandono").length;
+
+  // Por nivel
+  $("tNiveles").innerHTML = '<thead><tr><th>Nivel</th><th class="num">Intentos</th><th class="num">Aprobados</th><th class="num">Aprobación</th><th class="num">Promedio</th></tr></thead><tbody>' +
+    NIVELES.map((n) => {
+      const x = f.filter((d) => d.nivel === n.id);
+      const a = x.filter((d) => d.condicion === "Aprobado").length;
+      const prom = x.length ? Math.round(x.reduce((s, d) => s + (d.porcentaje || 0), 0) / x.length) + "%" : "—";
+      return "<tr><td>" + n.nombre + '</td><td class="num">' + x.length + '</td><td class="num">' + a +
+        '</td><td class="num">' + pct(a, x.length) + '</td><td class="num">' + prom + "</td></tr>";
+    }).join("") + "</tbody>";
+
+  // Preguntas con más errores (sobre las respondidas)
+  const porPregunta = {};
+  f.forEach((d) => (d.detalle || []).forEach((p) => {
+    if (p.resultado === "S/D") return;
+    const k = d.nivel + ":" + p.id;
+    const e = porPregunta[k] || (porPregunta[k] = { texto: p.pregunta, nivel: d.nivel, total: 0, errores: 0 });
+    e.total++;
+    if (p.resultado !== "correcta") e.errores++;
+  }));
+  const top = Object.values(porPregunta).filter((e) => e.errores)
+    .sort((a, b) => b.errores / b.total - a.errores / a.total || b.total - a.total).slice(0, 8);
+  $("barras").innerHTML = top.length ? top.map((e) => {
+    const p = Math.round((e.errores / e.total) * 100);
+    return '<div class="barra" data-tip="' + esc(NOMBRE_NIVEL[e.nivel] + " · " + e.texto + " — " + e.errores + " de " + e.total + " con error (" + p + "%)") + '">' +
+      '<span class="txt">' + esc(e.texto) + "</span>" +
+      '<div class="riel"><div class="fill" style="width:' + p + '%"></div></div><span class="pct">' + p + "%</span></div>";
+  }).join("") : '<p class="vacio">Sin errores registrados.</p>';
+
+  // Progreso por DNI: último nivel aprobado y último intento
+  const personas = {};
+  [...f].sort((a, b) => new Date(a.fin) - new Date(b.fin)).forEach((d) => {
+    const p = personas[d.dni] || (personas[d.dni] = { dni: d.dni, nombre: d.postulante?.nombre, local: d.postulante?.local, aprobados: new Set(), intentos: 0 });
+    p.intentos++;
+    p.ultimo = d;
+    if (d.condicion === "Aprobado") p.aprobados.add(d.nivel);
+  });
+  const filasP = Object.values(personas).sort((a, b) => new Date(b.ultimo.fin) - new Date(a.ultimo.fin));
+  $("tPersonas").innerHTML = filasP.length
+    ? '<thead><tr><th>DNI</th><th>Nombre</th><th>Local</th><th>Nivel alcanzado</th><th class="num">Intentos</th><th>Último intento</th><th>Resultado</th></tr></thead><tbody>' +
+      filasP.map((p) => {
+        const alcanzado = [...NIVELES].reverse().find((n) => p.aprobados.has(n.id));
+        return "<tr><td>" + esc(p.dni) + "</td><td>" + esc(p.nombre) + "</td><td>" + esc(p.local) + "</td><td>" +
+          (alcanzado ? alcanzado.nombre : '<span class="gris">Ninguno</span>') + '</td><td class="num">' + p.intentos + "</td><td>" +
+          esc(NOMBRE_NIVEL[p.ultimo.nivel]) + " · " + fecha(p.ultimo.fin) + "</td><td>" + etiqueta(p.ultimo) + "</td></tr>";
+      }).join("") + "</tbody>"
+    : '<tbody><tr><td class="vacio">Sin datos.</td></tr></tbody>';
+
+  // Todos los intentos
+  const filasI = [...f].sort((a, b) => new Date(b.fin) - new Date(a.fin));
+  $("tIntentos").innerHTML = filasI.length
+    ? '<thead><tr><th>Fecha</th><th>DNI</th><th>Nombre</th><th>Local</th><th>Nivel</th><th class="num">%</th><th>Resultado</th><th>Cierre</th><th class="num">Tiempo</th></tr></thead><tbody>' +
+      filasI.map((d) => "<tr><td>" + fecha(d.fin) + "</td><td>" + esc(d.dni) + "</td><td>" + esc(d.postulante?.nombre) + "</td><td>" +
+        esc(d.postulante?.local) + "</td><td>" + esc(NOMBRE_NIVEL[d.nivel] || d.nivel) + '</td><td class="num">' + (d.porcentaje ?? "—") +
+        "</td><td>" + etiqueta(d) + "</td><td>" + motivo(d.motivo_cierre) + '</td><td class="num">' + minutos(d.segundos_usados) + "</td></tr>").join("") + "</tbody>"
+    : '<tbody><tr><td class="vacio">Sin datos.</td></tr></tbody>';
+}
+
+function etiqueta(d) {
+  return d.condicion === "Aprobado" ? '<span class="etq ok">Aprobado</span>' : '<span class="etq mal">' + esc(d.condicion || "—") + "</span>";
+}
+function motivo(m) {
+  const base = String(m).split(":")[0];
+  return { entregado: "Entregado", tiempo: "Tiempo agotado", abandono: "Cerró la página", salida: "Salió de la ventana" }[base] || esc(m);
+}
+function minutos(s) {
+  if (s == null) return "—";
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+}
+
+/* ===========================================================
+   INTERACCIÓN
+   =========================================================== */
+["fNivel", "fLocal"].forEach((id) => $(id).addEventListener("change", pintar));
+$("fBuscar").addEventListener("input", pintar);
+
+$("barras").addEventListener("mousemove", (e) => {
+  const b = e.target.closest(".barra");
+  const tip = $("tip");
+  if (!b) { tip.style.display = "none"; return; }
+  tip.textContent = b.dataset.tip;
+  tip.style.display = "block";
+  tip.style.left = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8) + "px";
+  tip.style.top = e.clientY + 14 + "px";
+});
+$("barras").addEventListener("mouseleave", () => { $("tip").style.display = "none"; });
+
+$("btnImportar").addEventListener("click", () => { $("txtImport").value = ""; $("dlg").showModal(); });
+$("btnCancelar").addEventListener("click", () => $("dlg").close());
+$("btnConfirmar").addEventListener("click", () => {
+  let nuevos;
+  try { nuevos = JSON.parse($("txtImport").value); } catch (e) { alert("El JSON no es válido."); return; }
+  nuevos = (Array.isArray(nuevos) ? nuevos : [nuevos]).filter((d) => d && d.dni && d.nivel);
+  if (!nuevos.length) { alert("No se encontraron resultados con DNI y nivel."); return; }
+  const clave = (d) => d.dni + "|" + d.nivel + "|" + d.fin;
+  const existentes = new Set(datos.map(clave));
+  datos = datos.concat(nuevos.filter((d) => !existentes.has(clave(d))));
+  guardarResultados(datos);
+  $("dlg").close();
+  pintarLocales();
+  pintar();
+});
+
+$("btnCsv").addEventListener("click", () => {
+  const cols = ["fecha", "dni", "nombre", "correo", "local", "nivel", "porcentaje", "condicion", "motivo_cierre", "segundos_usados", "respondidas", "total_preguntas"];
+  const val = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+  const filas = filtrados().map((d) => [d.fin, d.dni, d.postulante?.nombre, d.postulante?.correo, d.postulante?.local,
+    NOMBRE_NIVEL[d.nivel] || d.nivel, d.porcentaje, d.condicion, d.motivo_cierre, d.segundos_usados, d.respondidas, d.total_preguntas].map(val).join(","));
+  const blob = new Blob(["﻿" + [cols.join(","), ...filas].join("\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "examenes_" + new Date().toISOString().slice(0, 10) + ".csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+pintarLocales();
+pintar();
+</script>
+</body>
+</html>
