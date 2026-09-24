@@ -227,6 +227,7 @@ const CONFIG = {
   // Progreso por DNI. Con Supabase configurado el progreso es compartido entre dispositivos.
   // Sin Supabase se guarda solo en este navegador (sirve para probar, no para producción).
   SUPABASE_URL: null,       // p.ej. "https://xxxx.supabase.co"
+  ESPERA_HORAS: 48,         // tras desaprobar o cerrar un examen, horas hasta poder volver a rendir ese nivel
   SUPABASE_ANON_KEY: null   // la tabla no es accesible con esta key: solo las funciones de supabase.sql
 };
 
@@ -392,6 +393,7 @@ let nivel = null;             // nivel elegido
 let PREGUNTAS = [];
 let restante = 0;
 let aprobados = [];           // ids de niveles aprobados por el DNI
+let desaprobados = {};        // nivel -> fecha ISO del último intento no aprobado
 let cronometro = null;
 let inicio = null;
 let motivoCierre = null;
@@ -423,13 +425,17 @@ function mezclarExamen(preguntas) {
 
 function limpiarDni(v) { return String(v).replace(/\D/g, ""); }
 
-async function leerAprobados(dni) {
+// Devuelve { aprobados: [niveles], desaprobados: { nivel: fecha ISO del último intento no aprobado } }.
+async function leerProgreso(dni) {
   if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
-    const r = await rpc("niveles_aprobados", { p_dni: dni });
+    const r = await rpc("estado_dni", { p_dni: dni });
     if (!r.ok) throw new Error("Supabase " + r.status);
-    return (await r.json()) || [];
+    const d = (await r.json()) || {};
+    return { aprobados: d.aprobados || [], desaprobados: d.desaprobados || {} };
   }
-  try { return JSON.parse(localStorage.getItem("aprobados_" + dni)) || []; } catch (e) { return []; }
+  try {
+    return JSON.parse(localStorage.getItem("progreso_" + dni)) || { aprobados: [], desaprobados: {} };
+  } catch (e) { return { aprobados: [], desaprobados: {} }; }
 }
 
 function rpc(nombre, datos) {
@@ -441,18 +447,33 @@ function rpc(nombre, datos) {
   });
 }
 
-function guardarLocal(dni, nivelId) {
+function guardarLocal(d) {
   try {
-    const lista = JSON.parse(localStorage.getItem("aprobados_" + dni)) || [];
-    if (!lista.includes(nivelId)) lista.push(nivelId);
-    localStorage.setItem("aprobados_" + dni, JSON.stringify(lista));
+    const prog = JSON.parse(localStorage.getItem("progreso_" + d.dni)) || { aprobados: [], desaprobados: {} };
+    if (d.condicion === "Aprobado") { if (!prog.aprobados.includes(d.nivel)) prog.aprobados.push(d.nivel); }
+    else prog.desaprobados[d.nivel] = d.fin;
+    localStorage.setItem("progreso_" + d.dni, JSON.stringify(prog));
   } catch (e) { /* sin almacenamiento local */ }
 }
 
-// Un nivel está disponible si todos los anteriores están aprobados y él no.
+// Momento desde el que se puede volver a rendir un nivel desaprobado (null = sin espera).
+function habilitaDesde(nivelId) {
+  const ultimo = desaprobados[nivelId];
+  if (!ultimo) return null;
+  const desde = new Date(new Date(ultimo).getTime() + CONFIG.ESPERA_HORAS * 3600 * 1000);
+  return desde > new Date() ? desde : null;
+}
+
+function fechaCorta(f) {
+  return f.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) + " " +
+    f.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) + " hs";
+}
+
+// Un nivel está disponible si todos los anteriores están aprobados, él no, y pasó la espera.
 function estadoNivel(i) {
   if (aprobados.includes(NIVELES[i].id)) return "hecho";
-  return NIVELES.slice(0, i).every((n) => aprobados.includes(n.id)) ? "disponible" : "bloq";
+  if (!NIVELES.slice(0, i).every((n) => aprobados.includes(n.id))) return "bloq";
+  return habilitaDesde(NIVELES[i].id) ? "espera" : "disponible";
 }
 
 function pintarNiveles() {
@@ -462,11 +483,12 @@ function pintarNiveles() {
     const est = estadoNivel(i);
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "nivel" + (est === "bloq" ? " bloq" : "") + (est === "hecho" ? " hecho" : "");
+    b.className = "nivel" + (est === "bloq" || est === "espera" ? " bloq" : "") + (est === "hecho" ? " hecho" : "");
     b.disabled = est !== "disponible";
     b.innerHTML = '<span class="num">Nivel ' + (i + 1) + "</span><strong>" + n.nombre + "</strong>" +
       (est === "hecho" ? '<span class="etq ok">Aprobado</span>'
         : est === "disponible" ? '<span class="etq sd">Disponible</span>'
+        : est === "espera" ? '<span class="etq mal">En espera</span><span class="gris" style="font-size:.78rem">Desde ' + fechaCorta(habilitaDesde(n.id)) + "</span>"
         : '<span class="etq mal">Bloqueado</span>');
     if (est === "disponible") b.addEventListener("click", () => elegirNivel(i, b));
     cont.appendChild(b);
@@ -475,7 +497,11 @@ function pintarNiveles() {
   if (i >= 0) elegirNivel(i, cont.children[i]);
   else {
     $("bloqueDatos").classList.add("oculto");
-    $("estadoDni").textContent = "Aprobaste todos los niveles.";
+    const k = NIVELES.findIndex((_, j) => estadoNivel(j) === "espera");
+    $("estadoDni").textContent = k >= 0
+      ? "Tenés que esperar " + CONFIG.ESPERA_HORAS + " hs para volver a rendir " + NIVELES[k].nombre +
+        ". Podés rendir desde el " + fechaCorta(habilitaDesde(NIVELES[k].id)) + "."
+      : "Aprobaste todos los niveles.";
   }
 }
 
@@ -502,7 +528,9 @@ $("btnConsultar").addEventListener("click", async () => {
   $("btnConsultar").disabled = true;
   $("estadoDni").textContent = "Consultando…";
   try {
-    aprobados = await leerAprobados(dni);
+    const prog = await leerProgreso(dni);
+    aprobados = prog.aprobados;
+    desaprobados = prog.desaprobados;
     postulante.dni = dni;
     $("estadoDni").textContent = aprobados.length
       ? "Niveles aprobados: " + NIVELES.filter((n) => aprobados.includes(n.id)).map((n) => n.nombre).join(", ") + "."
@@ -747,7 +775,7 @@ function armarPayload() {
 }
 
 function enviar(payload) {
-  if (payload.condicion === "Aprobado") guardarLocal(payload.dni, payload.nivel);
+  guardarLocal(payload);
   const cuerpo = JSON.stringify(payload);
   if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
     try {
@@ -801,6 +829,9 @@ function mostrarResultado(d) {
     '<p style="font-weight:600;margin-top:.5rem">Condición: ' + d.condicion + "</p>" +
     (d.condicion === "Aprobado" && NIVELES[NIVELES.indexOf(nivel) + 1]
       ? '<p class="gris">Se habilitó el nivel ' + NIVELES[NIVELES.indexOf(nivel) + 1].nombre + ". Ingresá de nuevo con tu DNI para rendirlo.</p>" : "") +
+    (d.condicion !== "Aprobado"
+      ? '<p class="gris">Podés volver a rendir este nivel en ' + CONFIG.ESPERA_HORAS + " hs, desde el " +
+        fechaCorta(new Date(new Date(d.fin).getTime() + CONFIG.ESPERA_HORAS * 3600 * 1000)) + ".</p>" : "") +
     '<div class="detalle">' + filas + "</div>" +
     '<p class="gris" style="margin-top:1.5rem;font-size:.85rem">Resultado en JSON para cargar en la base:</p>' +
     "<textarea readonly>" + JSON.stringify(d, null, 2) + "</textarea>";
