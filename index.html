@@ -6,7 +6,7 @@
 <title>Exámenes de ascenso</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --tinta:#1E211F; --papel:#FFFFFF; --fondo:#ECEFE9; --verde:#0E6E43; --verde-suave:#E2EFE7;
@@ -150,63 +150,69 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
 @media(max-width:560px){.reloj{font-size:1.6rem}h1{font-size:1.4rem}h2{font-size:1.15rem}main{padding:1.5rem 1rem 7rem}}
 
 /* =====================================================================
-   TEMA (estilo Atlassian): capa que se aplica sobre lo anterior.
-   Lienzo blanco, un solo azul para acciones, tarjetas redondeadas,
-   verde/rojo solo para aprobado/desaprobado.
+   TEMA (estilo "invernadero editorial"): capa que se aplica sobre lo
+   anterior. Lienzo salvia, tarjetas papel sin sombra, verde bosque para
+   texto y selección, lima como único acento (botón principal), títulos
+   grandes en serif (Fraunces). Radios: 16px tarjetas, 4px botones/inputs.
    Para volver al diseño anterior alcanza con borrar este bloque.
    ===================================================================== */
 :root{
-  --tinta:#101214; --papel:#FFFFFF; --fondo:#F7F8F9; --verde:#1868DB; --verde-suave:#E9F2FE;
-  --alerta:#AE2E24; --alerta-suave:#FFECEB; --gris:#42526E; --linea:#DFE1E6;
-  --ok:#216E4E; --ok-suave:#DCFFF1; --navy:#101214; --amarillo:#FCA700; --violeta:#BF63F3; --hoja:#22A06B;
-  --radio:12px; --sombra:rgba(9,30,66,.31) 0 0 1px 0, rgba(9,30,66,.25) 0 1px 1px 0;
+  --tinta:#043F2E; --papel:#FCFCFC; --fondo:#EEF2E3; --verde:#043F2E; --verde-suave:#E4EDCB;
+  --alerta:#9B2C1F; --alerta-suave:#F9E3DF; --gris:#4D6358; --linea:rgba(4,63,46,.14);
+  --lima:#C8F169; --lima-hover:#B6E04F; --bosque-medio:#2A6F2B; --campo:rgba(4,63,46,.35);
+  --radio:4px;
 }
 body{font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-h1,h2,.reloj,.puntaje,.marca{font-family:"Manrope","Inter",sans-serif}
-h1{font-weight:700;letter-spacing:.005em}
-h2{font-weight:500;letter-spacing:.005em}
-header{border-bottom-color:#F0F1F2}
-.reloj{color:var(--verde);font-weight:800}
+h1,.puntaje{font-family:"Fraunces","Source Serif 4",Georgia,serif;font-weight:400;letter-spacing:-.02em}
+h1{font-size:2.5rem;line-height:1.1}
+h2{font-weight:500;letter-spacing:0}
+header,footer{background:var(--papel);border-color:var(--linea)}
+.marca{font-weight:500}
+.reloj{color:var(--tinta);font-weight:500}
 .reloj.bajo{color:var(--alerta)}
-.riel i{height:6px;border-radius:999px}
-.riel i.actual{background:var(--verde);opacity:.45}
-.btn{border-radius:28px;font-weight:500;padding:.75rem 1.6rem}
-.btn:hover:not(:disabled){background:#1558BC}
-.btn.sec{border-color:var(--tinta)}
-.btn.sec:hover:not(:disabled){background:#F0F1F2}
-.campo input,.campo select{border-color:#B7B9BE;border-radius:8px}
-.campo input:focus,.campo select:focus{border-color:var(--verde);box-shadow:0 0 0 1px var(--verde)}
-.campo label{font-weight:500;color:var(--gris)}
-.reglas,.nivel,.opcion,table,.detalle{border:none;box-shadow:var(--sombra)}
-.reglas{border-radius:20px;padding:1.5rem}
-.reglas li::before{border-radius:3px}
-.opcion{border:1px solid #B7B9BE;box-shadow:none}
+.riel i{height:4px;border-radius:999px;background:rgba(4,63,46,.14)}
+.riel i.hecha{background:var(--bosque-medio)}
+.riel i.actual{background:var(--tinta)}
+.paso{text-transform:uppercase;letter-spacing:.06em;font-size:.75rem;font-weight:500;color:var(--gris)}
+.btn{background:var(--lima);color:#000;border-radius:4px;font-weight:500;padding:.75rem 1.25rem}
+.btn:hover:not(:disabled){background:var(--lima-hover)}
+.btn:disabled{background:rgba(4,63,46,.1);color:var(--gris)}
+.btn.sec{background:transparent;border:1px solid #000;color:#000}
+.campo label{font-weight:500}
+.campo input,.campo select{border-color:var(--campo);border-radius:4px}
+.campo input:focus,.campo select:focus{border-color:var(--tinta);box-shadow:0 0 0 1px var(--tinta)}
+.reglas,.nivel,.opcion,table,.detalle{border:1px solid var(--linea);box-shadow:none}
+.reglas{border-radius:16px;padding:1.5rem}
+.reglas li::before{border-radius:999px;background:var(--bosque-medio)}
+.reglas li.dura::before{background:var(--alerta)}
+.opcion{border-radius:4px}
 .opcion:hover{border-color:var(--tinta)}
-.opcion .letra{border:none;border-radius:8px;background:#F0F1F2}
-.opcion.sel{border:2px solid var(--verde);padding:calc(.9rem - 1px) calc(1rem - 1px)}
-table{border-radius:20px}
-.marcas button{border-color:#B7B9BE;font-weight:500}
-.marcas button[aria-checked="true"]{background:var(--navy);border-color:var(--navy)}
-.nivel{border-radius:20px;border:2px solid transparent;padding:1.1rem}
-.nivel.sel{border-color:var(--verde);background:var(--verde-suave)}
+.opcion .letra{border-radius:4px;border-color:var(--linea);background:var(--fondo)}
+.opcion.sel{border-color:var(--tinta);background:var(--verde-suave)}
+.opcion.sel .letra{background:var(--tinta);color:var(--papel)}
+table{border-radius:16px}
+thead th{background:var(--fondo);font-weight:500}
+.marcas button{border-radius:4px;border-color:var(--tinta);font-weight:500;color:var(--tinta)}
+.marcas button[aria-checked="true"]{background:var(--tinta);color:var(--papel)}
+.nivel{border-radius:16px}
+.nivel.sel{border-color:var(--tinta);background:var(--verde-suave)}
 .etq{border-radius:999px;font-weight:500;padding:.15rem .6rem}
-.etq.ok{background:var(--ok-suave);color:var(--ok)}
-.tarjeta-aviso{border-radius:20px;border-top:none;box-shadow:inset 0 4px 0 var(--alerta)}
+.etq.ok{background:var(--lima);color:#000}
+.etq.sd{background:var(--fondo);color:var(--tinta)}
+.tarjeta-aviso{border-radius:16px;border-top:none;box-shadow:inset 0 4px 0 var(--alerta)}
 
-/* Resultado: tarjeta; aprobado en panel oscuro con formas de color */
-#resultado.tarjeta-res{position:relative;overflow:hidden;isolation:isolate;background:var(--papel);
-  border-radius:20px;box-shadow:var(--sombra);padding:2rem 2rem 2.25rem;max-width:40rem}
+/* Resultado: tarjeta; aprobado en panel verde bosque */
+#resultado.tarjeta-res{background:var(--papel);border:1px solid var(--linea);border-radius:16px;
+  padding:2rem 2rem 2.25rem;max-width:40rem}
+#resultado.tarjeta-res .puntaje{font-size:5rem;line-height:.95}
 #resultado.tarjeta-res .puntaje.mal{color:var(--alerta)}
-#resultado.tarjeta-res.aprobo{background:var(--navy);color:#fff}
-#resultado.tarjeta-res.aprobo .gris{color:rgba(255,255,255,.7)}
-#resultado.tarjeta-res.aprobo .puntaje{color:#fff}
-#resultado.tarjeta-res.aprobo p{color:rgba(255,255,255,.88)}
-#resultado.tarjeta-res.aprobo::before,#resultado.tarjeta-res.aprobo::after{content:"";position:absolute;z-index:-1}
-#resultado.tarjeta-res.aprobo::before{width:150px;height:32px;top:22px;right:-36px;background:var(--violeta);transform:rotate(9deg);
-  box-shadow:-70px 120px 0 -4px var(--verde)}
-#resultado.tarjeta-res.aprobo::after{width:48px;height:96px;bottom:-34px;right:56px;background:var(--amarillo);transform:rotate(-12deg);
-  box-shadow:90px -10px 0 -8px var(--hoja)}
-@media(max-width:560px){#resultado.tarjeta-res{padding:1.5rem}}
+#resultado.tarjeta-res.aprobo{background:var(--tinta);border-color:var(--tinta);color:var(--papel)}
+#resultado.tarjeta-res.aprobo h1{color:var(--papel)}
+#resultado.tarjeta-res.aprobo .gris{color:rgba(252,252,252,.7)}
+#resultado.tarjeta-res.aprobo .puntaje{color:var(--lima)}
+#resultado.tarjeta-res.aprobo p{color:rgba(252,252,252,.88)}
+#resultado.tarjeta-res h1{font-size:2.25rem}
+@media(max-width:560px){#resultado.tarjeta-res{padding:1.5rem}h1{font-size:2rem}#resultado.tarjeta-res .puntaje{font-size:4rem}}
 </style>
 </head>
 <body>
