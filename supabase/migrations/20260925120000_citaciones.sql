@@ -3,10 +3,10 @@
 --  · Capacitación carga la lista de citados (DNI, nivel, fecha) con su clave
 --    desde citaciones.html.
 --  · Al iniciar el examen, la citación pendiente de ese DNI y nivel pasa a "presente".
---  · Si termina el día de la citación (hora Argentina) sin que la persona se
---    presente, queda "ausente" y se genera un resultado Desaprobado (0%,
---    motivo_cierre = 'ausente'), que también aplica la espera de 48 hs.
---  · Las ausencias se cierran solas cada hora (pg_cron) y además cada vez que
+--  · Si a las 20:00 (hora Argentina) del día de la citación la persona no hizo
+--    ningún examen ese día, queda "ausente" y se genera un resultado Desaprobado
+--    (0%, motivo_cierre = 'ausente'), que también aplica la espera de 48 hs.
+--  · Las ausencias se cierran solas a las 20:00 (pg_cron) y además cada vez que
 --    se consulta el listado o se inicia un examen.
 -- Se puede volver a correr sin romper nada.
 -- ============================================================
@@ -29,7 +29,13 @@ create index if not exists examen_citaciones_fecha_idx on public.examen_citacion
 alter table public.examen_citaciones enable row level security;
 revoke all on public.examen_citaciones from anon, authenticated;
 
--- Cierra como ausentes (Desaprobado) las citaciones cuyo día ya terminó.
+-- Hora límite de una citación: las 20:00 (hora Argentina) del día citado.
+create or replace function public.limite_citacion(p_fecha date)
+returns timestamptz language sql immutable as $$
+  select (p_fecha + time '20:00') at time zone 'America/Argentina/Buenos_Aires';
+$$;
+
+-- A la hora límite: presente si hizo algún examen ese día; si no, ausente (Desaprobado).
 create or replace function public.cerrar_ausencias()
 returns int language plpgsql security definer set search_path = public as $$
 declare
@@ -40,9 +46,15 @@ declare
 begin
   for c in select * from examen_citaciones
            where estado = 'citado'
-             and ((fecha + 1)::timestamp at time zone 'America/Argentina/Buenos_Aires') <= now()
+             and limite_citacion(fecha) <= now()
            for update skip locked loop
-    fin := (c.fecha + 1)::timestamp at time zone 'America/Argentina/Buenos_Aires';
+    fin := limite_citacion(c.fecha);
+    if exists (select 1 from examen_intentos i where i.marca = c.marca and i.dni = c.dni
+               and i.inicio >= c.fecha::timestamp at time zone 'America/Argentina/Buenos_Aires'
+               and i.inicio < fin) then
+      update examen_citaciones set estado = 'presente' where id = c.id;
+      continue;
+    end if;
     insert into examen_resultados (marca, dni, nivel, porcentaje, condicion, nombre, apellido, local, payload, creado)
     values (c.marca, c.dni, c.nivel, 0, 'Desaprobado', c.nombre, c.apellido, c.local,
             jsonb_build_object('motivo_cierre', 'ausente', 'citacion_id', c.id, 'fecha_citacion', c.fecha, 'detalle', '[]'::jsonb),
@@ -55,6 +67,7 @@ begin
 end;
 $$;
 revoke all on function public.cerrar_ausencias() from public;
+revoke all on function public.limite_citacion(date) from public;
 
 -- Carga citados. p_personas: [{dni, nivel, nombre, apellido, local}]
 -- Si ya hay una citación pendiente del mismo DNI y nivel, se actualiza (fecha y datos).
@@ -180,8 +193,11 @@ begin
   values (p_marca, p_dni, p_nivel, left(trim(p_nombre), 80), left(trim(p_apellido), 80), left(trim(p_local), 80), left(trim(p_correo), 120))
   returning token into nuevo;
 
+  -- Presente: la citación de este nivel, o cualquier citación de hoy (antes de las 20 hs).
   update examen_citaciones set estado = 'presente'
-   where marca = p_marca and dni = p_dni and nivel = p_nivel and estado = 'citado';
+   where marca = p_marca and dni = p_dni and estado = 'citado'
+     and (nivel = p_nivel or (fecha = (now() at time zone 'America/Argentina/Buenos_Aires')::date
+                              and now() < limite_citacion(fecha)));
 
   return json_build_object(
     'token', nuevo,
@@ -205,12 +221,12 @@ grant execute on function public.borrar_citacion(text,bigint) to anon;
 grant execute on function public.asistencia_resumen(date,date) to anon;
 grant execute on function public.iniciar_examen(text,text,text,text,text,text,text) to anon;
 
--- Cierre automático cada hora (si pg_cron está disponible; si no, se cierra al consultar).
+-- Cierre automático a las 20:00 hora Argentina = 23:00 UTC (si pg_cron está disponible; si no, se cierra al consultar).
 do $$
 begin
   create extension if not exists pg_cron;
   perform cron.unschedule(jobid) from cron.job where jobname = 'cerrar_ausencias';
-  perform cron.schedule('cerrar_ausencias', '5 * * * *', 'select public.cerrar_ausencias()');
+  perform cron.schedule('cerrar_ausencias', '0 23 * * *', 'select public.cerrar_ausencias()');
 exception when others then
   raise notice 'pg_cron no disponible: las ausencias se cierran al consultar (%).', sqlerrm;
 end;
