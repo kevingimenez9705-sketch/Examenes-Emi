@@ -230,7 +230,6 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
 const CONFIG = {
   SALIDAS_PERMITIDAS: 0,    // 0 = cierra al primer intento de salir. 1 = un aviso y recién a la segunda cierra.
   PANTALLA_COMPLETA: true,  // pide fullscreen al comenzar; salir de fullscreen cuenta como salida
-  MOSTRAR_DETALLE: false,   // true = el postulante ve pregunta por pregunta qué respondió bien o mal
   LOCALES: [],              // p.ej. ["Caseros 2", "Lavalle 2"]. Vacío = campo de texto libre.
   WEBHOOK_URL: null,        // p.ej. "https://n8n.tu-dominio.com/webhook/examen". null = no envía.
   // Progreso por DNI. Con Supabase configurado el progreso es compartido entre dispositivos.
@@ -869,13 +868,6 @@ function enviar(payload) {
   } catch (e) { /* el resultado igual queda en pantalla para copiar */ }
 }
 
-const TITULOS = {
-  entregado: "Examen entregado",
-  tiempo: "Se terminó el tiempo",
-  abandono: "Examen cerrado",
-  salida: "Examen cerrado por salir de la ventana"
-};
-
 function mostrarResultado(d) {
   $("examen").classList.add("oculto");
   $("pie").classList.add("oculto");
@@ -883,31 +875,30 @@ function mostrarResultado(d) {
   $("cabecera").classList.add("oculto");
   const base = String(motivoCierre).split(":")[0];
 
-  const filas = d.detalle.map((x) => {
-    const etq = x.resultado === "correcta" ? '<span class="etq ok">OK</span>'
-      : x.resultado === "incorrecta" ? '<span class="etq mal">Error</span>'
-      : '<span class="etq sd">S/D</span>';
-    const resp = document.createElement("span");
-    resp.textContent = x.respuesta || "Sin responder";
-    return '<div class="fila"><span>' + x.id + ". " + x.pregunta + "<br><span class='gris'>" + resp.innerHTML + "</span></span>" + etq + "</div>";
-  }).join("");
+  const siguiente = NIVELES[NIVELES.indexOf(nivel) + 1];
+  const aprobo = d.condicion === "Aprobado";
+  const desde = fechaCorta(new Date(new Date(d.fin).getTime() + CONFIG.ESPERA_HORAS * 3600 * 1000));
+  const titulo = aprobo ? "¡Felicitaciones, " + d.postulante.nombre.split(" ")[0] + "!" : "Esta vez no alcanzó";
+  const mensaje = aprobo
+    ? (siguiente
+        ? "Aprobaste el nivel " + nivel.nombre + " y ya podés avanzar al nivel " + siguiente.nombre + ". ¡Seguí así!"
+        : "Completaste todos los niveles de " + marca.nombre + ". ¡Excelente trabajo!")
+    : (base === "salida" || base === "abandono"
+        ? "El examen se cerró porque saliste de la ventana. "
+        : base === "tiempo" ? "Se terminó el tiempo. " : "") +
+      "No te desanimes: repasá el manual y volvé a intentarlo desde el " + desde + ".";
 
   const r = $("resultado");
   r.classList.remove("oculto");
   r.innerHTML =
-    "<h1>" + (TITULOS[base] || "Examen cerrado") + "</h1>" +
-    '<p class="gris">' + marca.nombre + " · DNI " + d.dni + " · " + d.postulante.nombre + " · " + d.postulante.local + " · Nivel " + d.postulante.puesto + "</p>" +
-    '<div class="puntaje" style="margin-top:1.5rem">' + (d.porcentaje === null ? "S/D" : d.porcentaje + "%") + "</div>" +
-    '<p class="gris">' + d.aciertos + " correctas de " + d.evaluadas + " · " +
-      d.respondidas + " de " + d.total_preguntas + " respondidas" +
-      (d.sin_clave ? " · " + d.sin_clave + " sin clave cargada (S/D)" : "") + "</p>" +
-    '<p style="font-weight:600;margin-top:.5rem">Condición: ' + d.condicion + "</p>" +
-    (d.condicion === "Aprobado" && NIVELES[NIVELES.indexOf(nivel) + 1]
-      ? '<p class="gris">Se habilitó el nivel ' + NIVELES[NIVELES.indexOf(nivel) + 1].nombre + ". Ingresá de nuevo con tu DNI para rendirlo.</p>" : "") +
-    (d.condicion !== "Aprobado"
-      ? '<p class="gris">Podés volver a rendir este nivel en ' + CONFIG.ESPERA_HORAS + " hs, desde el " +
-        fechaCorta(new Date(new Date(d.fin).getTime() + CONFIG.ESPERA_HORAS * 3600 * 1000)) + ".</p>" : "") +
-    (CONFIG.MOSTRAR_DETALLE ? '<div class="detalle">' + filas + "</div>" : "");
+    '<p class="gris">' + marca.nombre + " · Nivel " + nivel.nombre + "</p>" +
+    '<div class="puntaje" style="margin:1rem 0 .5rem;color:' + (aprobo ? "var(--verde)" : "var(--alerta)") + '">' +
+      (d.porcentaje === null ? "S/D" : d.porcentaje + "%") + "</div>" +
+    '<span class="etq ' + (aprobo ? "ok" : "mal") + '" style="font-size:.9rem">' + d.condicion + "</span>" +
+    '<h1 style="margin-top:1.5rem" id="resTitulo"></h1>' +
+    '<p style="font-size:1.05rem" id="resMensaje"></p>';
+  $("resTitulo").textContent = titulo;
+  $("resMensaje").textContent = mensaje;
 }
 </script>
 </body>
