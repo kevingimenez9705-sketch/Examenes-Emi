@@ -1,7 +1,7 @@
 -- ============================================================
 -- Citaciones a examen
 --  · Capacitación carga la lista de citados (DNI, nivel, fecha) con su clave
---    desde citaciones.html.
+--    desde el Campus de Ascensos (apartado Citaciones).
 --  · Al iniciar el examen, la citación pendiente de ese DNI y nivel pasa a "presente".
 --  · Si a las 20:00 (hora Argentina) del día de la citación la persona no hizo
 --    ningún examen ese día, queda "ausente" y se genera un resultado Desaprobado
