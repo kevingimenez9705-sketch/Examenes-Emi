@@ -187,9 +187,10 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
           </ul>
         </div>
 
-        <div class="campo"><label for="f_nombre">Nombre y apellido</label><input id="f_nombre" autocomplete="name"></div>
+        <div class="campo"><label for="f_nombre">Nombre</label><input id="f_nombre" autocomplete="given-name"></div>
+        <div class="campo"><label for="f_apellido">Apellido</label><input id="f_apellido" autocomplete="family-name"></div>
         <div class="campo"><label for="f_correo">Correo</label><input id="f_correo" type="email" autocomplete="email"></div>
-        <div class="campo"><label for="f_local">Local</label><input id="f_local" list="lista_locales"><datalist id="lista_locales"></datalist></div>
+        <div class="campo"><label for="f_local">Local</label><select id="f_local"></select></div>
 
         <p class="gris" style="font-size:.85rem;margin-top:1.5rem">Al comenzar se activa la pantalla completa y el control de salida.</p>
         <button class="btn" id="btnComenzar" style="margin-top:.5rem">Comenzar examen</button>
@@ -230,13 +231,12 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
 const CONFIG = {
   SALIDAS_PERMITIDAS: 0,    // 0 = cierra al primer intento de salir. 1 = un aviso y recién a la segunda cierra.
   PANTALLA_COMPLETA: true,  // pide fullscreen al comenzar; salir de fullscreen cuenta como salida
-  LOCALES: [],              // p.ej. ["Caseros 2", "Lavalle 2"]. Vacío = campo de texto libre.
   WEBHOOK_URL: null,        // p.ej. "https://n8n.tu-dominio.com/webhook/examen". null = no envía.
   // Progreso por DNI. Con Supabase configurado el progreso es compartido entre dispositivos.
   // Sin Supabase se guarda solo en este navegador (sirve para probar, no para producción).
-  SUPABASE_URL: null,       // p.ej. "https://xxxx.supabase.co"
+  SUPABASE_URL: "https://lyvjunfgobisrfdccrnq.supabase.co",       // p.ej. "https://xxxx.supabase.co"
   ESPERA_HORAS: 48,         // tras desaprobar o cerrar un examen, horas hasta poder volver a rendir ese nivel
-  SUPABASE_ANON_KEY: null   // la tabla no es accesible con esta key: solo las funciones de supabase.sql
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5dmp1bmZnb2Jpc3JmZGNjcm5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNTc5MTYsImV4cCI6MjEwNTgzMzkxNn0.-glFu4WVy_1c2-gBgu85Q31gwPZzxZmOlKAh6W1KZ-k"   // la tabla no es accesible con esta key: solo las funciones de supabase/migrations
 };
 
 /* ===========================================================
@@ -382,7 +382,7 @@ const PREGUNTAS_GERENTE = [
     opciones:["REBA, fumigación, análisis de agua, habilitación y formulario 960 ARCA","Solo la habilitación","Ninguno, se muestran si los piden","El plan de carrera"], correcta:0 }
 ];
 
-// Extremas: mismos niveles y criterios que Sabores. Bancos pendientes de cargar desde su manual.
+// Hamburguesas Extremas: mismos niveles y criterios que Sabores. Bancos pendientes de cargar desde su manual.
 const EXTREMAS_ENTRENADOR = [];
 const EXTREMAS_ENCARGADO = [];
 const EXTREMAS_GERENTE = [];
@@ -397,11 +397,18 @@ function armarNiveles(entrenador, encargado, gerente) {
   ];
 }
 
+// Locales tal como figuran en el organigrama del Campus de Ascensos (data.js de ascensos-):
+// los nombres tienen que coincidir exactamente para que el resultado aparezca en el local correcto.
+const LOCALES_SABORES = ["Chilavert", "Caballito 1", "Lomas de Zamora 3", "Lomas de Zamora 4", "Lomas de Zamora 5", "Santa Fe 1", "Villa Urquiza", "Entre Rios", "Boedo", "Pellegrini", "Villa del Parque", "Liniers 1", "Liniers 2", "Ciudadela", "Pompeya", "Caballito 2", "Barracas", "Pueyrredon 1", "Pueyrredon 2", "Constitucion", "Flores", "Belgrano", "Lavalle 1", "Lavalle 2", "Tucuman", "Florida", "Retiro", "Jose C Paz 1", "Jose C Paz 2", "Del Viso", "Grand Bourg", "Don Torcuato", "Santos Lugares", "Bella Vista", "William Morris", "Cruce Castelar", "Loma Hermosa", "Hurlingham 1", "Hurlingham 2", "Caseros 1", "Caseros 2", "El Palomar", "Manuel Alberti", "Sourdeaux", "Tortuguitas", "Los Polvorines", "San Miguel 1", "San Miguel 2", "San Miguel 3", "Pilar 1", "Pilar 2", "Crovara", "Tapiales", "Laferrere 1", "Laferrere 2", "Gonzalez Catan", "La Plata 1", "La Plata 2", "La Plata 3", "La Plata 4", "Lezama", "Berazategui 1", "Berazategui 2", "Solano", "Varela", "Cruce Varela", "Varela 2", "Mar del Plata 1", "Mar del Plata 2", "Mar del Plata 3", "Mar del Plata 4", "Mar del Plata 5", "Adrogue", "Banfield", "Temperley 1", "Temperley 2", "Lanus 2", "Lanus 3", "Claypole", "Quilmes 1", "Quilmes 2", "Quilmes 3", "Wilde", "Gerli", "El Jaguel", "Monte Grande 1", "Monte Grande 2", "Tristan Suarez", "Glew", "Ezeiza", "Ciudadela (Mania)", "Isidro Casanova (Mania)", "Lanus 4", "Valentina Alsina", "Burzaco", "Zarate", "Escobar 1", "Maschwitz", "Boulogne", "Benavidez", "Escobar 2", "San Fernando", "San Isidro 1", "San Isidro 2", "Virreyes", "Tigre", "Pacheco 2", "Pte Saavedra", "Vicente Lopez", "Munro", "Villa Adelina", "Jose Leon Suarez", "Martinez", "Pacheco 1", "El Talar", "Olivos", "Garin", "Savio", "San Martin 1", "San Martin 2", "Villa Ballester 1", "Villa Ballester 2", "Rosario 1", "Rosario 2", "Rosario 3", "San Nicolas", "Ramos Mejia 1", "Ramos Mejia 2", "Ramos Mejia 3", "Haedo", "Ituzaingo", "Moron 1", "Moron 2", "Moron 3", "Moron 4", "Moron 5", "Lujan", "General Rodriguez", "Moreno 1", "Moreno 2", "Paso del Rey", "Merlo 1", "Merlo 2", "Merlo 3", "Rafael Castillo", "Padua", "Corrientes 1", "Corrientes 2", "Corrientes 3", "Corrientes 4", "Lomas del Mirador", "San Justo 1", "San Justo 2", "San Justo 3"];
+const LOCALES_HEX = ["Avellaneda", "Wilde", "Pompeya", "Rosario", "Quilmes", "Monte Grande", "Lomas de Zamora", "Banfield", "La Plata", "Berazategui", "Solano", "Varela", "Glew", "Temperley", "Lanus", "Adrogué", "Florida", "Tucuman", "Once", "Callao", "Pueyrredon", "Pellegrini", "Castelar", "Merlo", "Ramos", "Moreno", "El Palomar", "Rodriguez", "Lujan", "Zarate", "Garin", "Laferrere", "Moron", "Crovara", "San Justo", "Polvorines", "Tortuguitas", "Pilar", "Alberti", "Jose C. Paz", "San Miguel", "Grand Bourg", "Talar", "Caballito", "Liniers", "Flores", "Flores 2", "Mataderos", "Loma Hermosa", "Hurlingham", "Caseros", "Munro", "José L. Suarez", "Olivos", "San Isidro", "Boulogne", "Villa Adelina", "Villa Ballester", "San Fernando", "Virreyes", "Pacheco", "Vicente Lopez"];
+
+// Los ids de marca son los mismos que usa el Campus (sabores / hex).
 const MARCAS = [
-  { id:"sabores",  nombre:"Sabores Express", niveles: armarNiveles(PREGUNTAS_ENTRENADOR, PREGUNTAS_ENCARGADO, PREGUNTAS_GERENTE) },
-  { id:"extremas", nombre:"Extremas",        niveles: armarNiveles(EXTREMAS_ENTRENADOR, EXTREMAS_ENCARGADO, EXTREMAS_GERENTE) }
+  { id:"sabores", nombre:"Sabores Express",       locales: LOCALES_SABORES, niveles: armarNiveles(PREGUNTAS_ENTRENADOR, PREGUNTAS_ENCARGADO, PREGUNTAS_GERENTE) },
+  { id:"hex",     nombre:"Hamburguesas Extremas", locales: LOCALES_HEX,     niveles: armarNiveles(EXTREMAS_ENTRENADOR, EXTREMAS_ENCARGADO, EXTREMAS_GERENTE) }
 ];
-let marca = MARCAS.find((m) => m.id === new URLSearchParams(location.search).get("marca")) || MARCAS[0];
+const paramMarca = new URLSearchParams(location.search).get("marca");
+let marca = MARCAS.find((m) => m.id === (paramMarca === "extremas" ? "hex" : paramMarca)) || MARCAS[0];
 let NIVELES = marca.niveles;
 
 /* ===========================================================
@@ -446,14 +453,10 @@ function mezclarExamen(preguntas) {
   });
 }
 
-if (CONFIG.LOCALES.length) {
-  const sel = document.createElement("select");
-  sel.id = "f_local";
-  sel.innerHTML = '<option value="">Elegí tu local</option>' +
-    CONFIG.LOCALES.map((l) => "<option></option>").join("");
-  CONFIG.LOCALES.forEach((l, i) => { sel.options[i + 1].textContent = l; sel.options[i + 1].value = l; });
-  $("f_local").replaceWith(sel);
-  $("lista_locales").remove();
+function pintarLocales() {
+  const sel = $("f_local");
+  sel.innerHTML = '<option value="">Elegí tu local</option>';
+  [...marca.locales].sort((x, y) => x.localeCompare(y, "es")).forEach((l) => sel.add(new Option(l, l)));
 }
 
 function pintarMarcas() {
@@ -468,6 +471,7 @@ function pintarMarcas() {
     $("marcas").appendChild(b);
   });
   $("tituloPortada").textContent = "Exámenes de ascenso — " + marca.nombre;
+  pintarLocales();
   document.title = "Exámenes de ascenso — " + marca.nombre;
 }
 
@@ -607,11 +611,12 @@ $("btnConsultar").addEventListener("click", async () => {
 
 $("btnComenzar").addEventListener("click", async () => {
   postulante.nombre = $("f_nombre").value.trim();
+  postulante.apellido = $("f_apellido").value.trim();
   postulante.correo = $("f_correo").value.trim();
   postulante.local  = $("f_local").value.trim();
   if (!postulante.dni || !nivel) { alert("Consultá tu DNI y elegí un nivel."); return; }
-  if (!postulante.nombre || !postulante.local) {
-    alert("Completá nombre y local para comenzar.");
+  if (!postulante.nombre || !postulante.apellido || !postulante.local) {
+    alert("Completá nombre, apellido y local para comenzar.");
     return;
   }
   postulante.puesto = nivel.nombre;
@@ -626,7 +631,7 @@ $("btnComenzar").addEventListener("click", async () => {
   $("examen").classList.remove("oculto");
   $("cabecera").classList.remove("oculto");
   $("pie").classList.remove("oculto");
-  $("quien").textContent = marca.nombre + " · " + postulante.nombre + " · Nivel " + nivel.nombre;
+  $("quien").textContent = marca.nombre + " · " + postulante.nombre + " " + postulante.apellido + " · Nivel " + nivel.nombre;
   armarRiel();
   arrancarReloj();
   pintar();
@@ -848,7 +853,7 @@ function enviar(payload) {
   if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
     try {
       rpc("registrar_resultado", { p_marca: payload.marca, p_dni: payload.dni, p_nivel: payload.nivel, p_porcentaje: payload.porcentaje,
-        p_condicion: payload.condicion, p_nombre: payload.postulante.nombre, p_local: payload.postulante.local,
+        p_condicion: payload.condicion, p_nombre: payload.postulante.nombre, p_apellido: payload.postulante.apellido, p_local: payload.postulante.local,
         p_payload: payload }).catch(() => {});
     } catch (e) { /* el resultado igual queda en pantalla para copiar */ }
   }
@@ -871,7 +876,7 @@ function mostrarResultado(d) {
 
   const siguiente = NIVELES[NIVELES.indexOf(nivel) + 1];
   const aprobo = d.condicion === "Aprobado";
-  const titulo = aprobo ? "¡Felicitaciones, " + d.postulante.nombre.split(" ")[0] + "!" : "Esta vez no alcanzó";
+  const titulo = aprobo ? "¡Felicitaciones, " + d.postulante.nombre + "!" : "Esta vez no alcanzó";
   const mensaje = aprobo
     ? (siguiente
         ? "Aprobaste el nivel " + nivel.nombre + " y ya podés avanzar al nivel " + siguiente.nombre + ". ¡Seguí así!"
