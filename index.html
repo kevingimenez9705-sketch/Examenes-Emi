@@ -126,6 +126,22 @@ footer{
 .etq.sd{background:var(--fondo);color:var(--gris)}
 textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid var(--linea);border-radius:var(--radio);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;background:var(--papel)}
 .oculto{display:none !important}
+
+/* Niveles */
+.dni-fila{display:flex;gap:.6rem;max-width:30rem;align-items:flex-end}
+.dni-fila .campo{flex:1;margin-bottom:0}
+.niveles{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;max-width:40rem;margin:1.5rem 0}
+.nivel{
+  text-align:left;padding:1rem;background:var(--papel);border:1px solid var(--linea);
+  border-radius:var(--radio);cursor:pointer;display:flex;flex-direction:column;gap:.35rem;
+}
+.nivel .num{font-size:.75rem;color:var(--gris);font-weight:600}
+.nivel strong{font-size:1.05rem}
+.nivel.bloq{cursor:not-allowed;opacity:.55}
+.nivel.hecho{cursor:default}
+.nivel.sel{border-color:var(--verde);background:var(--verde-suave)}
+.nivel .etq{align-self:flex-start}
+@media(max-width:560px){.niveles{grid-template-columns:1fr}.dni-fila{flex-direction:column;align-items:stretch}}
 @media(max-width:560px){.reloj{font-size:1.6rem}h1{font-size:1.4rem}h2{font-size:1.15rem}main{padding:1.5rem 1rem 7rem}}
 </style>
 </head>
@@ -142,25 +158,36 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
 <main>
   <!-- PORTADA -->
   <section id="portada">
-    <h1>Examen de ascenso — Sabores Express</h1>
-    <p class="gris">Evaluación de conocimientos operativos, seguridad alimentaria y cultura organizacional.</p>
+    <h1>Exámenes de ascenso — Sabores Express</h1>
+    <p class="gris">Tres niveles: Entrenador, Encargado y Gerente. Cada nivel se habilita al aprobar el anterior.</p>
 
-    <div class="reglas">
-      <ul>
-        <li>Tenés <strong id="reglaTiempo">20 minutos</strong> para responder <strong id="reglaCant">22</strong> preguntas.</li>
-        <li>Se responde de a una pregunta por vez y no se puede volver atrás.</li>
-        <li class="dura">Si cambiás de pestaña, minimizás o salís de pantalla completa, el examen se cierra automáticamente con lo respondido hasta ese momento.</li>
-        <li class="dura">Cuando el tiempo llega a cero, se entrega solo.</li>
-      </ul>
+    <div class="dni-fila" style="margin-top:1.5rem">
+      <div class="campo"><label for="f_dni">DNI (sin puntos)</label><input id="f_dni" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+      <button class="btn" id="btnConsultar">Consultar</button>
     </div>
+    <p class="gris" id="estadoDni" style="font-size:.85rem;margin-top:.5rem"></p>
 
-    <div class="campo"><label for="f_nombre">Nombre y apellido</label><input id="f_nombre" autocomplete="name"></div>
-    <div class="campo"><label for="f_correo">Correo</label><input id="f_correo" type="email" autocomplete="email"></div>
-    <div class="campo"><label for="f_local">Local</label><input id="f_local"></div>
-    <div class="campo"><label for="f_puesto">Puesto actual / puesto al que asciende</label><input id="f_puesto"></div>
+    <div id="bloqueNiveles" class="oculto">
+      <div class="niveles" id="niveles"></div>
 
-    <p class="gris" style="font-size:.85rem;margin-top:1.5rem">Al comenzar se activa la pantalla completa y el control de salida.</p>
-    <button class="btn" id="btnComenzar" style="margin-top:.5rem">Comenzar examen</button>
+      <div id="bloqueDatos" class="oculto">
+        <div class="reglas">
+          <ul>
+            <li>Nivel <strong id="reglaNivel"></strong>: tenés <strong id="reglaTiempo"></strong> para responder <strong id="reglaCant"></strong> preguntas. Se aprueba con <strong id="reglaAprobado"></strong>.</li>
+            <li>Se responde de a una pregunta por vez y no se puede volver atrás.</li>
+            <li class="dura">Si cambiás de pestaña, minimizás o salís de pantalla completa, el examen se cierra automáticamente con lo respondido hasta ese momento.</li>
+            <li class="dura">Cuando el tiempo llega a cero, se entrega solo.</li>
+          </ul>
+        </div>
+
+        <div class="campo"><label for="f_nombre">Nombre y apellido</label><input id="f_nombre" autocomplete="name"></div>
+        <div class="campo"><label for="f_correo">Correo</label><input id="f_correo" type="email" autocomplete="email"></div>
+        <div class="campo"><label for="f_local">Local</label><input id="f_local"></div>
+
+        <p class="gris" style="font-size:.85rem;margin-top:1.5rem">Al comenzar se activa la pantalla completa y el control de salida.</p>
+        <button class="btn" id="btnComenzar" style="margin-top:.5rem">Comenzar examen</button>
+      </div>
+    </div>
   </section>
 
   <!-- PREGUNTA -->
@@ -194,11 +221,14 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
    CONFIGURACIÓN
    =========================================================== */
 const CONFIG = {
-  MINUTOS: 20,              // tiempo total del examen
   SALIDAS_PERMITIDAS: 0,    // 0 = cierra al primer intento de salir. 1 = un aviso y recién a la segunda cierra.
   PANTALLA_COMPLETA: true,  // pide fullscreen al comenzar; salir de fullscreen cuenta como salida
-  APROBADO: 70,             // % mínimo de aprobación (sobre preguntas con clave cargada)
-  WEBHOOK_URL: null         // p.ej. "https://n8n.tu-dominio.com/webhook/examen" o el REST de Supabase. null = no envía.
+  WEBHOOK_URL: null,        // p.ej. "https://n8n.tu-dominio.com/webhook/examen". null = no envía.
+  // Progreso por DNI. Con Supabase configurado el progreso es compartido entre dispositivos.
+  // Sin Supabase se guarda solo en este navegador (sirve para probar, no para producción).
+  SUPABASE_URL: null,       // p.ej. "https://xxxx.supabase.co"
+  SUPABASE_ANON_KEY: null,
+  SUPABASE_TABLA: "examen_resultados"
 };
 
 /* ===========================================================
@@ -207,7 +237,7 @@ const CONFIG = {
    null = S/D, sin clave cargada: no puntúa.
    Grilla: correcta = [colFila1, colFila2, colFila3].
    =========================================================== */
-const PREGUNTAS = [
+const PREGUNTAS_ENTRENADOR = [
   { id:5,  texto:"¿Cuál es el tiempo de cinta del horno POWER HOT?",
     opciones:["5 a 7 minutos","3 a 5 minutos","6 a 8 minutos","10 a 11 minutos"], correcta:null },
   { id:6,  texto:"¿Cuál es el tiempo de cinta del horno BURNER?",
@@ -255,6 +285,52 @@ const PREGUNTAS = [
     opciones:["Órdenes grandes","Órdenes mayores a 10 minutos en el local","Cantidad de órdenes con errores generados","Cantidad de órdenes"], correcta:2 }
 ];
 
+// Bancos de ejemplo para Encargado y Gerente: revisar y reemplazar por las preguntas oficiales.
+const PREGUNTAS_ENCARGADO = [
+  { id:101, texto:"Al recibir mercadería, ¿qué se controla primero?",
+    opciones:["Temperatura, vencimiento y estado del envase","Solo la cantidad de cajas","El precio del remito","Nada, se guarda directamente"], correcta:0 },
+  { id:102, texto:"¿Qué se hace con un producto vencido encontrado en la heladera?",
+    opciones:["Se usa primero para no perderlo","Se retira, se registra como merma y se descarta","Se deja para el turno siguiente","Se vuelve a etiquetar"], correcta:1 },
+  { id:103, texto:"Al cierre hay una diferencia de caja. ¿Qué corresponde?",
+    opciones:["Cubrirla con propinas","Ignorarla si es chica","Recontar, registrarla e informarla según procedimiento","Ajustar el reporte para que cierre"], correcta:2 },
+  { id:104, texto:"¿Cuál es el objetivo principal del briefing al inicio del turno?",
+    opciones:["Repartir tareas, objetivos y novedades del día","Controlar la asistencia únicamente","Hacer el pedido a proveedores","Contar el stock"], correcta:0 },
+  { id:105, texto:"Un colaborador no cumple un procedimiento de seguridad alimentaria. ¿Qué hacés primero?",
+    opciones:["Lo sancionás sin hablar","Lo corregís en el momento, explicás el porqué y hacés seguimiento","Lo dejás pasar","Lo informás a RR.HH. al final del mes"], correcta:1 },
+  { id:106, texto:"¿Qué mide el inaccuracy en Delivery?",
+    opciones:["Tiempo de entrega","Cantidad de órdenes con errores generados","Cantidad de órdenes","Ticket promedio"], correcta:1 },
+  { id:107, texto:"¿Cada cuánto se registran las temperaturas de heladeras y freezers?",
+    opciones:["Una vez por semana","Al inicio y cierre de cada turno","Solo cuando hay auditoría"], correcta:null },
+  { id:108, texto:"¿Qué método de rotación de stock aplicamos?",
+    opciones:["UEPS","PEPS: primero en entrar, primero en salir","Al azar"], correcta:1 }
+];
+
+const PREGUNTAS_GERENTE = [
+  { id:201, texto:"Ventas del mes: $1.000.000. Costo de mercadería: $300.000. ¿Cuál es el % de costo?",
+    opciones:["3%","30%","70%","33%"], correcta:1 },
+  { id:202, texto:"¿Cómo se calcula el ticket promedio?",
+    opciones:["Ventas totales / cantidad de tickets","Cantidad de tickets / días","Ventas / horas trabajadas","Costo / ventas"], correcta:0 },
+  { id:203, texto:"¿Qué es un KPI?",
+    opciones:["Un informe contable anual","Un indicador clave para medir el cumplimiento de un objetivo","Un procedimiento de limpieza","Un tipo de auditoría"], correcta:1 },
+  { id:204, texto:"El local obtuvo bajo puntaje en una auditoría. ¿Cuál es la mejor acción?",
+    opciones:["Esperar la próxima auditoría","Plan de acción con responsables, fechas y seguimiento","Cambiar a todo el equipo","Discutir el resultado con el auditor"], correcta:1 },
+  { id:205, texto:"¿Qué indica una alta rotación de personal?",
+    opciones:["Que el equipo está consolidado","Posibles problemas de clima, liderazgo u onboarding","Que las ventas subieron","Nada relevante"], correcta:1 },
+  { id:206, texto:"¿Qué describe mejor el liderazgo esperado en un gerente?",
+    opciones:["Dar órdenes sin explicar","Dar el ejemplo, desarrollar al equipo y tomar decisiones con datos","Hacer todas las tareas personalmente","Delegar todo sin seguimiento"], correcta:1 },
+  { id:207, texto:"¿Qué es la cultura organizacional?",
+    opciones:["La cultura del local","El “ADN” de la compañía: valores, creencias, normas y comportamientos que marcan cómo se trabaja y se decide","El resultado de las auditorías"], correcta:1 },
+  { id:208, texto:"La merma del mes subió. ¿Qué analizás primero?",
+    opciones:["Registros de merma por producto y turno, rotación y pedidos","El precio de venta","La cantidad de clientes","Nada, es normal"], correcta:0 }
+];
+
+// Orden = orden de habilitación. Cada nivel se habilita al aprobar el anterior.
+const NIVELES = [
+  { id:"entrenador", nombre:"Entrenador", minutos:20, aprobado:70, preguntas:PREGUNTAS_ENTRENADOR },
+  { id:"encargado",  nombre:"Encargado",  minutos:20, aprobado:70, preguntas:PREGUNTAS_ENCARGADO },
+  { id:"gerente",    nombre:"Gerente",    minutos:25, aprobado:75, preguntas:PREGUNTAS_GERENTE }
+];
+
 /* ===========================================================
    ESTADO
    =========================================================== */
@@ -263,7 +339,10 @@ let estado = "portada";       // portada | en_curso | cerrado
 let indice = 0;
 let salidas = 0;
 let ultimaSalida = 0;
-let restante = CONFIG.MINUTOS * 60;
+let nivel = null;             // nivel elegido
+let PREGUNTAS = [];
+let restante = 0;
+let aprobados = [];           // ids de niveles aprobados por el DNI
 let cronometro = null;
 let inicio = null;
 let motivoCierre = null;
@@ -275,18 +354,106 @@ const $ = (id) => document.getElementById(id);
 /* ===========================================================
    PORTADA
    =========================================================== */
-$("reglaTiempo").textContent = CONFIG.MINUTOS + " minutos";
-$("reglaCant").textContent = PREGUNTAS.length;
+function limpiarDni(v) { return String(v).replace(/\D/g, ""); }
+
+async function leerAprobados(dni) {
+  if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
+    const url = CONFIG.SUPABASE_URL + "/rest/v1/" + CONFIG.SUPABASE_TABLA +
+      "?select=nivel&condicion=eq.Aprobado&dni=eq." + encodeURIComponent(dni);
+    const r = await fetch(url, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: "Bearer " + CONFIG.SUPABASE_ANON_KEY } });
+    if (!r.ok) throw new Error("Supabase " + r.status);
+    return [...new Set((await r.json()).map((x) => x.nivel))];
+  }
+  try { return JSON.parse(localStorage.getItem("aprobados_" + dni)) || []; } catch (e) { return []; }
+}
+
+function guardarLocal(dni, nivelId) {
+  try {
+    const lista = JSON.parse(localStorage.getItem("aprobados_" + dni)) || [];
+    if (!lista.includes(nivelId)) lista.push(nivelId);
+    localStorage.setItem("aprobados_" + dni, JSON.stringify(lista));
+  } catch (e) { /* sin almacenamiento local */ }
+}
+
+// Un nivel está disponible si todos los anteriores están aprobados y él no.
+function estadoNivel(i) {
+  if (aprobados.includes(NIVELES[i].id)) return "hecho";
+  return NIVELES.slice(0, i).every((n) => aprobados.includes(n.id)) ? "disponible" : "bloq";
+}
+
+function pintarNiveles() {
+  const cont = $("niveles");
+  cont.innerHTML = "";
+  NIVELES.forEach((n, i) => {
+    const est = estadoNivel(i);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "nivel" + (est === "bloq" ? " bloq" : "") + (est === "hecho" ? " hecho" : "");
+    b.disabled = est !== "disponible";
+    b.innerHTML = '<span class="num">Nivel ' + (i + 1) + "</span><strong>" + n.nombre + "</strong>" +
+      (est === "hecho" ? '<span class="etq ok">Aprobado</span>'
+        : est === "disponible" ? '<span class="etq sd">Disponible</span>'
+        : '<span class="etq mal">Bloqueado</span>');
+    if (est === "disponible") b.addEventListener("click", () => elegirNivel(i, b));
+    cont.appendChild(b);
+  });
+  const i = NIVELES.findIndex((_, k) => estadoNivel(k) === "disponible");
+  if (i >= 0) elegirNivel(i, cont.children[i]);
+  else {
+    $("bloqueDatos").classList.add("oculto");
+    $("estadoDni").textContent = "Aprobaste todos los niveles.";
+  }
+}
+
+function elegirNivel(i, boton) {
+  nivel = NIVELES[i];
+  [...$("niveles").children].forEach((el) => el.classList.remove("sel"));
+  boton.classList.add("sel");
+  $("reglaNivel").textContent = nivel.nombre;
+  $("reglaTiempo").textContent = nivel.minutos + " minutos";
+  $("reglaCant").textContent = nivel.preguntas.length;
+  $("reglaAprobado").textContent = nivel.aprobado + "%";
+  $("bloqueDatos").classList.remove("oculto");
+}
+
+$("f_dni").addEventListener("input", () => {
+  $("f_dni").value = limpiarDni($("f_dni").value).slice(0, 8);
+  $("bloqueNiveles").classList.add("oculto"); $("estadoDni").textContent = ""; });
+$("f_dni").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btnConsultar").click(); });
+
+$("btnConsultar").addEventListener("click", async () => {
+  const dni = limpiarDni($("f_dni").value);
+  if (dni.length < 7 || dni.length > 8) { $("estadoDni").textContent = "Ingresá un DNI válido (7 u 8 números)."; return; }
+  $("f_dni").value = dni;
+  $("btnConsultar").disabled = true;
+  $("estadoDni").textContent = "Consultando…";
+  try {
+    aprobados = await leerAprobados(dni);
+    postulante.dni = dni;
+    $("estadoDni").textContent = aprobados.length
+      ? "Niveles aprobados: " + NIVELES.filter((n) => aprobados.includes(n.id)).map((n) => n.nombre).join(", ") + "."
+      : "Sin exámenes aprobados. Empezás por Entrenador.";
+    $("bloqueNiveles").classList.remove("oculto");
+    pintarNiveles();
+  } catch (e) {
+    $("estadoDni").textContent = "No se pudo consultar el progreso. Probá de nuevo.";
+  } finally {
+    $("btnConsultar").disabled = false;
+  }
+});
 
 $("btnComenzar").addEventListener("click", async () => {
   postulante.nombre = $("f_nombre").value.trim();
   postulante.correo = $("f_correo").value.trim();
   postulante.local  = $("f_local").value.trim();
-  postulante.puesto = $("f_puesto").value.trim();
-  if (!postulante.nombre || !postulante.local || !postulante.puesto) {
-    alert("Completá nombre, local y puesto para comenzar.");
+  if (!postulante.dni || !nivel) { alert("Consultá tu DNI y elegí un nivel."); return; }
+  if (!postulante.nombre || !postulante.local) {
+    alert("Completá nombre y local para comenzar.");
     return;
   }
+  postulante.puesto = nivel.nombre;
+  PREGUNTAS = nivel.preguntas;
+  restante = nivel.minutos * 60;
   if (CONFIG.PANTALLA_COMPLETA && document.documentElement.requestFullscreen) {
     try { await document.documentElement.requestFullscreen(); } catch (e) { /* el navegador puede negarlo */ }
   }
@@ -296,7 +463,7 @@ $("btnComenzar").addEventListener("click", async () => {
   $("examen").classList.remove("oculto");
   $("cabecera").classList.remove("oculto");
   $("pie").classList.remove("oculto");
-  $("quien").textContent = postulante.nombre + " · " + postulante.local;
+  $("quien").textContent = postulante.nombre + " · Nivel " + nivel.nombre;
   armarRiel();
   arrancarReloj();
   pintar();
@@ -486,10 +653,12 @@ function armarPayload() {
   const porcentaje = conClave.length ? Math.round((aciertos / conClave.length) * 100) : null;
   return {
     examen: "Ascenso Sabores Express",
+    dni: postulante.dni,
+    nivel: nivel.id,
     postulante,
     inicio: inicio ? inicio.toISOString() : null,
     fin: new Date().toISOString(),
-    segundos_usados: CONFIG.MINUTOS * 60 - Math.max(0, restante),
+    segundos_usados: nivel.minutos * 60 - Math.max(0, restante),
     motivo_cierre: motivoCierre,
     salidas_detectadas: salidas,
     respondidas: Object.keys(respuestas).length,
@@ -498,14 +667,26 @@ function armarPayload() {
     evaluadas: conClave.length,
     sin_clave: detalle.length - conClave.length,
     porcentaje,
-    condicion: porcentaje === null ? "S/D" : (porcentaje >= CONFIG.APROBADO ? "Aprobado" : "Desaprobado"),
+    condicion: porcentaje === null ? "S/D" : (porcentaje >= nivel.aprobado ? "Aprobado" : "Desaprobado"),
     detalle
   };
 }
 
 function enviar(payload) {
-  if (!CONFIG.WEBHOOK_URL) return;
+  if (payload.condicion === "Aprobado") guardarLocal(payload.dni, payload.nivel);
   const cuerpo = JSON.stringify(payload);
+  if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
+    try {
+      fetch(CONFIG.SUPABASE_URL + "/rest/v1/" + CONFIG.SUPABASE_TABLA, {
+        method: "POST", keepalive: true,
+        headers: { "Content-Type": "application/json", apikey: CONFIG.SUPABASE_ANON_KEY,
+          Authorization: "Bearer " + CONFIG.SUPABASE_ANON_KEY, Prefer: "return=minimal" },
+        body: JSON.stringify({ dni: payload.dni, nivel: payload.nivel, porcentaje: payload.porcentaje,
+          condicion: payload.condicion, nombre: payload.postulante.nombre, local: payload.postulante.local, payload })
+      }).catch(() => {});
+    } catch (e) { /* el resultado igual queda en pantalla para copiar */ }
+  }
+  if (!CONFIG.WEBHOOK_URL) return;
   try {
     if (navigator.sendBeacon) {
       navigator.sendBeacon(CONFIG.WEBHOOK_URL, new Blob([cuerpo], { type: "application/json" }));
@@ -542,12 +723,14 @@ function mostrarResultado(d) {
   r.classList.remove("oculto");
   r.innerHTML =
     "<h1>" + (TITULOS[base] || "Examen cerrado") + "</h1>" +
-    '<p class="gris">' + d.postulante.nombre + " · " + d.postulante.local + " · " + d.postulante.puesto + "</p>" +
+    '<p class="gris">DNI ' + d.dni + " · " + d.postulante.nombre + " · " + d.postulante.local + " · Nivel " + d.postulante.puesto + "</p>" +
     '<div class="puntaje" style="margin-top:1.5rem">' + (d.porcentaje === null ? "S/D" : d.porcentaje + "%") + "</div>" +
     '<p class="gris">' + d.aciertos + " de " + d.evaluadas + " preguntas evaluadas · " +
       d.respondidas + " de " + d.total_preguntas + " respondidas" +
       (d.sin_clave ? " · " + d.sin_clave + " sin clave cargada (S/D)" : "") + "</p>" +
     '<p style="font-weight:600;margin-top:.5rem">Condición: ' + d.condicion + "</p>" +
+    (d.condicion === "Aprobado" && NIVELES[NIVELES.indexOf(nivel) + 1]
+      ? '<p class="gris">Se habilitó el nivel ' + NIVELES[NIVELES.indexOf(nivel) + 1].nombre + ". Ingresá de nuevo con tu DNI para rendirlo.</p>" : "") +
     '<div class="detalle">' + filas + "</div>" +
     '<p class="gris" style="margin-top:1.5rem;font-size:.85rem">Resultado en JSON para cargar en la base:</p>' +
     "<textarea readonly>" + JSON.stringify(d, null, 2) + "</textarea>";
