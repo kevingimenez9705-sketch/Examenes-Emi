@@ -234,9 +234,9 @@ const CONFIG = {
   WEBHOOK_URL: null,        // p.ej. "https://n8n.tu-dominio.com/webhook/examen". null = no envía.
   // Progreso por DNI. Con Supabase configurado el progreso es compartido entre dispositivos.
   // Sin Supabase se guarda solo en este navegador (sirve para probar, no para producción).
-  SUPABASE_URL: null,       // p.ej. "https://xxxx.supabase.co"
+  SUPABASE_URL: "https://lyvjunfgobisrfdccrnq.supabase.co",       // p.ej. "https://xxxx.supabase.co"
   ESPERA_HORAS: 48,         // tras desaprobar o cerrar un examen, horas hasta poder volver a rendir ese nivel
-  SUPABASE_ANON_KEY: null   // la tabla no es accesible con esta key: solo las funciones de supabase/migrations
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5dmp1bmZnb2Jpc3JmZGNjcm5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNTc5MTYsImV4cCI6MjEwNTgzMzkxNn0.-glFu4WVy_1c2-gBgu85Q31gwPZzxZmOlKAh6W1KZ-k"   // la tabla no es accesible con esta key: solo las funciones de supabase/migrations
 };
 
 /* ===========================================================
