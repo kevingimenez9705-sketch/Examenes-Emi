@@ -524,11 +524,6 @@ function habilitaDesde(nivelId) {
   return desde > new Date() ? desde : null;
 }
 
-function fechaCorta(f) {
-  return f.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) + " " +
-    f.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) + " hs";
-}
-
 // Un nivel está disponible si todos los anteriores están aprobados, él no, y pasó la espera.
 function estadoNivel(i) {
   if (aprobados.includes(NIVELES[i].id)) return "hecho";
@@ -550,7 +545,7 @@ function pintarNiveles() {
       (est === "hecho" ? '<span class="etq ok">Aprobado</span>'
         : est === "disponible" ? '<span class="etq sd">Disponible</span>'
         : est === "pronto" ? '<span class="etq sd">Próximamente</span>'
-        : est === "espera" ? '<span class="etq mal">En espera</span><span class="gris" style="font-size:.78rem">Desde ' + fechaCorta(habilitaDesde(n.id)) + "</span>"
+        : est === "espera" ? '<span class="etq mal">En espera</span>'
         : '<span class="etq mal">Bloqueado</span>');
     if (est === "disponible") b.addEventListener("click", () => elegirNivel(i, b));
     cont.appendChild(b);
@@ -564,8 +559,7 @@ function pintarNiveles() {
     $("estadoDni").textContent = pronto && k < 0
       ? "Los exámenes de " + marca.nombre + " estarán disponibles próximamente."
       : k >= 0
-      ? "Tenés que esperar " + CONFIG.ESPERA_HORAS + " hs para volver a rendir " + NIVELES[k].nombre +
-        ". Podés rendir desde el " + fechaCorta(habilitaDesde(NIVELES[k].id)) + "."
+      ? "Todavía no podés volver a rendir el nivel " + NIVELES[k].nombre + ". Repasá el manual e intentalo más adelante."
       : "Aprobaste todos los niveles.";
   }
 }
