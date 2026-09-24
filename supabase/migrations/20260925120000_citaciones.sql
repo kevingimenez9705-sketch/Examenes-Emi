@@ -9,12 +9,13 @@
 --  · Las ausencias se cierran solas a las 20:00 (pg_cron) y además cada vez que
 --    se consulta el listado o se inicia un examen.
 -- Se puede volver a correr sin romper nada.
+-- (Sin signos pesos ni barras invertidas dentro de textos: el SQL Editor de Supabase los interpreta mal.)
 -- ============================================================
 
 create table if not exists public.examen_citaciones (
   id bigint generated always as identity primary key,
   marca text not null check (marca in ('sabores','hex')),
-  dni text not null check (dni ~ '^\d{7,8}$'),
+  dni text not null check (length(dni) between 7 and 8 and dni !~ '[^0-9]'),
   nivel text not null check (nivel in ('entrenador','encargado','gerente')),
   nombre text,
   apellido text,
@@ -31,13 +32,13 @@ revoke all on public.examen_citaciones from anon, authenticated;
 
 -- Hora límite de una citación: las 20:00 (hora Argentina) del día citado.
 create or replace function public.limite_citacion(p_fecha date)
-returns timestamptz language sql immutable as $$
+returns timestamptz language sql immutable as $fn$
   select (p_fecha + time '20:00') at time zone 'America/Argentina/Buenos_Aires';
-$$;
+$fn$;
 
 -- A la hora límite: presente si hizo algún examen ese día; si no, ausente (Desaprobado).
 create or replace function public.cerrar_ausencias()
-returns int language plpgsql security definer set search_path = public as $$
+returns int language plpgsql security definer set search_path = public as $fn$
 declare
   c examen_citaciones;
   fin timestamptz;
@@ -65,14 +66,14 @@ begin
   end loop;
   return n;
 end;
-$$;
+$fn$;
 revoke all on function public.cerrar_ausencias() from public;
 revoke all on function public.limite_citacion(date) from public;
 
 -- Carga citados. p_personas: [{dni, nivel, nombre, apellido, local}]
 -- Si ya hay una citación pendiente del mismo DNI y nivel, se actualiza (fecha y datos).
 create or replace function public.citar_personas(p_clave text, p_marca text, p_fecha date, p_personas jsonb)
-returns json language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public as $fn$
 declare
   p jsonb;
   v_dni text;
@@ -85,9 +86,9 @@ begin
     raise exception 'datos inválidos';
   end if;
   for p in select * from jsonb_array_elements(p_personas) loop
-    v_dni := regexp_replace(coalesce(p->>'dni', ''), '\D', '', 'g');
+    v_dni := regexp_replace(coalesce(p->>'dni', ''), '[^0-9]', '', 'g');
     v_nivel := lower(trim(coalesce(p->>'nivel', '')));
-    if v_dni !~ '^\d{7,8}$' or v_nivel not in ('entrenador','encargado','gerente') then
+    if length(v_dni) not between 7 and 8 or v_nivel not in ('entrenador','encargado','gerente') then
       errores := errores || jsonb_build_array(p);
       continue;
     end if;
@@ -104,13 +105,13 @@ begin
   end loop;
   return json_build_object('cargados', ok, 'rechazados', errores);
 end;
-$$;
+$fn$;
 
 -- Listado de citaciones (con DNI) para Capacitación. Cierra ausencias antes de listar.
 create or replace function public.citaciones_listado(p_clave text, p_desde date, p_hasta date)
 returns table (id bigint, marca text, dni text, nivel text, nombre text, apellido text, local text,
                fecha date, estado text, porcentaje int, condicion text, creado timestamptz)
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public as $fn$
 begin
   if not clave_valida(p_clave) then raise exception 'clave incorrecta'; end if;
   perform cerrar_ausencias();
@@ -127,21 +128,21 @@ begin
     where c.fecha between coalesce(p_desde, '-infinity'::date) and coalesce(p_hasta, 'infinity'::date)
     order by c.fecha desc, c.marca, c.local, c.apellido;
 end;
-$$;
+$fn$;
 
 -- Borra una citación pendiente (no toca resultados ya generados).
 create or replace function public.borrar_citacion(p_clave text, p_id bigint)
-returns void language plpgsql security definer set search_path = public as $$
+returns void language plpgsql security definer set search_path = public as $fn$
 begin
   if not clave_valida(p_clave) then raise exception 'clave incorrecta'; end if;
   delete from examen_citaciones where id = p_id and estado = 'citado';
 end;
-$$;
+$fn$;
 
 -- Resumen de asistencia por marca, local y nivel (sin DNI ni nombres), para el Campus.
 create or replace function public.asistencia_resumen(p_desde date default null, p_hasta date default null)
 returns table (marca text, local text, nivel text, citados int, presentes int, ausentes int, pendientes int)
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public as $fn$
 begin
   perform cerrar_ausencias();
   return query
@@ -154,12 +155,12 @@ begin
     group by c.marca, c.local, c.nivel
     order by c.marca, c.local, c.nivel;
 end;
-$$;
+$fn$;
 
 -- iniciar_examen: igual que antes + cierra ausencias y marca presente la citación pendiente.
 create or replace function public.iniciar_examen(
   p_marca text, p_dni text, p_nivel text, p_nombre text, p_apellido text, p_local text, p_correo text)
-returns json language plpgsql security definer set search_path = public as $$
+returns json language plpgsql security definer set search_path = public as $fn$
 declare
   orden text[] := array['entrenador','encargado','gerente'];
   pos int := array_position(orden, p_nivel);
@@ -167,7 +168,7 @@ declare
   t examen_intentos;
   nuevo uuid;
 begin
-  if p_dni !~ '^\d{7,8}$' or pos is null or p_marca not in ('sabores','hex')
+  if length(coalesce(p_dni, '')) not between 7 and 8 or p_dni ~ '[^0-9]' or pos is null or p_marca not in ('sabores','hex')
      or coalesce(trim(p_nombre), '') = '' or coalesce(trim(p_apellido), '') = '' or coalesce(trim(p_local), '') = '' then
     raise exception 'datos inválidos';
   end if;
@@ -208,7 +209,7 @@ begin
         order by random()), '[]'::json)
       from preguntas where marca = p_marca and nivel = p_nivel));
 end;
-$$;
+$fn$;
 
 revoke all on function public.citar_personas(text,text,date,jsonb) from public;
 revoke all on function public.citaciones_listado(text,date,date) from public;
@@ -222,7 +223,7 @@ grant execute on function public.asistencia_resumen(date,date) to anon;
 grant execute on function public.iniciar_examen(text,text,text,text,text,text,text) to anon;
 
 -- Cierre automático a las 20:00 hora Argentina = 23:00 UTC (si pg_cron está disponible; si no, se cierra al consultar).
-do $$
+do $fn$
 begin
   create extension if not exists pg_cron;
   perform cron.unschedule(jobid) from cron.job where jobname = 'cerrar_ausencias';
@@ -230,4 +231,4 @@ begin
 exception when others then
   raise notice 'pg_cron no disponible: las ausencias se cierran al consultar (%).', sqlerrm;
 end;
-$$;
+$fn$;
