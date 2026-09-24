@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Examen de ascenso — Sabores Express</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --tinta:#1E211F; --papel:#FFFFFF; --fondo:#ECEFE9; --verde:#0E6E43; --verde-suave:#E2EFE7;
+  --alerta:#B22B1F; --alerta-suave:#FBEAE8; --gris:#6B726D; --linea:#D6DBD4;
+  --radio:10px; --ancho:44rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--fondo); color:var(--tinta);
+  font-family:"Instrument Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column; min-height:100%;
+}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--verde);outline-offset:2px}
+
+/* Barra superior */
+header{
+  position:sticky; top:0; z-index:10; background:var(--papel);
+  border-bottom:1px solid var(--linea);
+}
+.barra{
+  max-width:var(--ancho); margin:0 auto; padding:.75rem 1.25rem;
+  display:flex; align-items:center; justify-content:space-between; gap:1rem;
+}
+.marca{font-size:.9rem;font-weight:600;letter-spacing:-.01em}
+.marca span{display:block;font-weight:400;color:var(--gris);font-size:.8rem}
+.reloj{
+  font-size:2rem; font-weight:700; font-variant-numeric:tabular-nums;
+  letter-spacing:-.03em; line-height:1;
+}
+.reloj.bajo{color:var(--alerta);animation:latido 1s ease-in-out infinite}
+@keyframes latido{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.reloj.bajo{animation:none}}
+.riel{display:flex;gap:2px;max-width:var(--ancho);margin:0 auto;padding:0 1.25rem .75rem}
+.riel i{flex:1;height:4px;border-radius:2px;background:var(--linea)}
+.riel i.hecha{background:var(--verde)}
+.riel i.actual{background:var(--tinta)}
+
+/* Contenido */
+main{flex:1;width:100%;max-width:var(--ancho);margin:0 auto;padding:2rem 1.25rem 7rem}
+.paso{font-size:.85rem;color:var(--gris);margin-bottom:.5rem;font-variant-numeric:tabular-nums}
+h1{font-size:1.75rem;font-weight:700;letter-spacing:-.025em;line-height:1.2;margin-bottom:.75rem}
+h2{font-size:1.35rem;font-weight:600;letter-spacing:-.02em;line-height:1.3;margin-bottom:1.25rem;max-width:34ch}
+p{max-width:62ch;margin-bottom:1rem}
+.gris{color:var(--gris)}
+
+/* Portada */
+.campo{margin-bottom:1rem;max-width:30rem}
+.campo label{display:block;font-size:.85rem;font-weight:600;margin-bottom:.35rem}
+.campo input,.campo select{
+  width:100%;padding:.7rem .85rem;background:var(--papel);
+  border:1px solid var(--linea);border-radius:var(--radio);
+}
+.campo input:focus,.campo select:focus{border-color:var(--verde);outline:none}
+.reglas{background:var(--papel);border:1px solid var(--linea);border-radius:var(--radio);padding:1.25rem;margin:1.5rem 0;max-width:34rem}
+.reglas li{list-style:none;padding-left:1.5rem;position:relative;margin-bottom:.6rem;font-size:.95rem}
+.reglas li:last-child{margin-bottom:0}
+.reglas li::before{content:"";position:absolute;left:0;top:.55em;width:8px;height:8px;border-radius:2px;background:var(--verde)}
+.reglas li.dura::before{background:var(--alerta)}
+
+/* Opciones */
+.opciones{display:flex;flex-direction:column;gap:.6rem;max-width:36rem}
+.opcion{
+  display:flex;align-items:flex-start;gap:.85rem;width:100%;text-align:left;
+  padding:.9rem 1rem;background:var(--papel);border:1px solid var(--linea);
+  border-radius:var(--radio);cursor:pointer;transition:border-color .12s,background .12s;
+}
+.opcion:hover{border-color:var(--gris)}
+.opcion .letra{
+  flex:none;width:1.6rem;height:1.6rem;border-radius:5px;background:var(--fondo);
+  border:1px solid var(--linea);display:grid;place-items:center;
+  font-size:.8rem;font-weight:600;color:var(--gris)
+}
+.opcion.sel{border-color:var(--verde);background:var(--verde-suave)}
+.opcion.sel .letra{background:var(--verde);border-color:var(--verde);color:#fff}
+
+/* Grilla */
+table{border-collapse:collapse;width:100%;max-width:36rem;background:var(--papel);border:1px solid var(--linea);border-radius:var(--radio);overflow:hidden}
+th,td{padding:.7rem .6rem;border-bottom:1px solid var(--linea);font-size:.9rem;text-align:center}
+th:first-child,td:first-child{text-align:left;font-weight:500}
+thead th{font-weight:600;background:var(--fondo)}
+tbody tr:last-child td{border-bottom:none}
+td input{width:1.1rem;height:1.1rem;accent-color:var(--verde)}
+
+/* Pie de acción */
+footer{
+  position:fixed;bottom:0;left:0;right:0;background:var(--papel);
+  border-top:1px solid var(--linea);padding:env(safe-area-inset-bottom) 0 0;
+}
+.acciones{max-width:var(--ancho);margin:0 auto;padding:.9rem 1.25rem;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.aviso-pie{font-size:.8rem;color:var(--gris)}
+.btn{
+  padding:.8rem 1.6rem;background:var(--verde);color:#fff;border:none;
+  border-radius:var(--radio);font-weight:600;cursor:pointer;
+}
+.btn:disabled{background:var(--linea);color:var(--gris);cursor:not-allowed}
+.btn.sec{background:transparent;color:var(--tinta);border:1px solid var(--linea)}
+
+/* Aviso de salida */
+#aviso{
+  position:fixed;inset:0;z-index:50;background:rgba(30,33,31,.75);
+  display:none;place-items:center;padding:1.5rem;
+}
+#aviso.ver{display:grid}
+.tarjeta-aviso{background:var(--papel);border-radius:var(--radio);padding:1.75rem;max-width:26rem;border-top:4px solid var(--alerta)}
+
+/* Resultado */
+.puntaje{font-size:4rem;font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.detalle{background:var(--papel);border:1px solid var(--linea);border-radius:var(--radio);margin-top:1.5rem}
+.detalle .fila{padding:.85rem 1.1rem;border-bottom:1px solid var(--linea);display:flex;justify-content:space-between;gap:1rem;font-size:.9rem}
+.detalle .fila:last-child{border-bottom:none}
+.etq{flex:none;font-weight:600;font-size:.78rem;padding:.1rem .5rem;border-radius:4px;height:fit-content}
+.etq.ok{background:var(--verde-suave);color:var(--verde)}
+.etq.mal{background:var(--alerta-suave);color:var(--alerta)}
+.etq.sd{background:var(--fondo);color:var(--gris)}
+textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid var(--linea);border-radius:var(--radio);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;background:var(--papel)}
+.oculto{display:none !important}
+@media(max-width:560px){.reloj{font-size:1.6rem}h1{font-size:1.4rem}h2{font-size:1.15rem}main{padding:1.5rem 1rem 7rem}}
+</style>
+</head>
+<body>
+
+<header id="cabecera" class="oculto">
+  <div class="barra">
+    <div class="marca">Examen de ascenso<span id="quien">Sabores Express</span></div>
+    <div class="reloj" id="reloj">00:00</div>
+  </div>
+  <div class="riel" id="riel"></div>
+</header>
+
+<main>
+  <!-- PORTADA -->
+  <section id="portada">
+    <h1>Examen de ascenso — Sabores Express</h1>
+    <p class="gris">Evaluación de conocimientos operativos, seguridad alimentaria y cultura organizacional.</p>
+
+    <div class="reglas">
+      <ul>
+        <li>Tenés <strong id="reglaTiempo">20 minutos</strong> para responder <strong id="reglaCant">22</strong> preguntas.</li>
+        <li>Se responde de a una pregunta por vez y no se puede volver atrás.</li>
+        <li class="dura">Si cambiás de pestaña, minimizás o salís de pantalla completa, el examen se cierra automáticamente con lo respondido hasta ese momento.</li>
+        <li class="dura">Cuando el tiempo llega a cero, se entrega solo.</li>
+      </ul>
+    </div>
+
+    <div class="campo"><label for="f_nombre">Nombre y apellido</label><input id="f_nombre" autocomplete="name"></div>
+    <div class="campo"><label for="f_correo">Correo</label><input id="f_correo" type="email" autocomplete="email"></div>
+    <div class="campo"><label for="f_local">Local</label><input id="f_local"></div>
+    <div class="campo"><label for="f_puesto">Puesto actual / puesto al que asciende</label><input id="f_puesto"></div>
+
+    <p class="gris" style="font-size:.85rem;margin-top:1.5rem">Al comenzar se activa la pantalla completa y el control de salida.</p>
+    <button class="btn" id="btnComenzar" style="margin-top:.5rem">Comenzar examen</button>
+  </section>
+
+  <!-- PREGUNTA -->
+  <section id="examen" class="oculto">
+    <div class="paso" id="paso"></div>
+    <h2 id="enunciado"></h2>
+    <div id="cuerpo"></div>
+  </section>
+
+  <!-- RESULTADO -->
+  <section id="resultado" class="oculto"></section>
+</main>
+
+<footer id="pie" class="oculto">
+  <div class="acciones">
+    <span class="aviso-pie" id="avisoPie">No salgas de esta ventana.</span>
+    <button class="btn" id="btnSiguiente" disabled>Siguiente</button>
+  </div>
+</footer>
+
+<div id="aviso" role="alertdialog" aria-modal="true">
+  <div class="tarjeta-aviso">
+    <h2 style="margin-bottom:.5rem">Saliste del examen</h2>
+    <p id="avisoTexto" class="gris"></p>
+    <button class="btn" id="btnVolver">Volver al examen</button>
+  </div>
+</div>
+
+<script>
+/* ===========================================================
+   CONFIGURACIÓN
+   =========================================================== */
+const CONFIG = {
+  MINUTOS: 20,              // tiempo total del examen
+  SALIDAS_PERMITIDAS: 0,    // 0 = cierra al primer intento de salir. 1 = un aviso y recién a la segunda cierra.
+  PANTALLA_COMPLETA: true,  // pide fullscreen al comenzar; salir de fullscreen cuenta como salida
+  APROBADO: 70,             // % mínimo de aprobación (sobre preguntas con clave cargada)
+  WEBHOOK_URL: null         // p.ej. "https://n8n.tu-dominio.com/webhook/examen" o el REST de Supabase. null = no envía.
+};
+
+/* ===========================================================
+   PREGUNTAS
+   correcta = índice de la opción correcta (0 = primera).
+   null = S/D, sin clave cargada: no puntúa.
+   Grilla: correcta = [colFila1, colFila2, colFila3].
+   =========================================================== */
+const PREGUNTAS = [
+  { id:5,  texto:"¿Cuál es el tiempo de cinta del horno POWER HOT?",
+    opciones:["5 a 7 minutos","3 a 5 minutos","6 a 8 minutos","10 a 11 minutos"], correcta:null },
+  { id:6,  texto:"¿Cuál es el tiempo de cinta del horno BURNER?",
+    opciones:["6 a 8 minutos","5 a 7 minutos","8 a 10 minutos","3 a 5 minutos"], correcta:null },
+  { id:7,  texto:"¿A qué temperatura se cocinan las empanadas en el horno de cinta?",
+    opciones:["230 a 250 °C","150 a 180 °C","200 a 220 °C","265 a 280 °C"], correcta:null },
+  { id:8,  texto:"¿Cuál es el vencimiento de las empanadas de jamón y queso y de jamón y roquefort?",
+    opciones:["5 días","3 días","9 días","7 días"], correcta:null },
+  { id:9,  texto:"¿Cuál es el vencimiento del resto de los gustos de empanadas?",
+    opciones:["5 días","7 días","3 días","10 días"], correcta:null },
+  { id:10, texto:"¿Cuál es la cantidad máxima de empanadas por bandeja para hornear?",
+    opciones:["6 unidades","10 unidades","8 unidades","5 unidades"], correcta:null },
+  { id:12, texto:"Leudado de las medialunas: tiempo y cocción.",
+    opciones:["8 horas, 32 por bandeja, 4 filas de 8 medialunas","7 horas, 28 por bandeja, 4 filas de 7 medialunas","8 horas, 28 por bandeja, 4 filas de 7 medialunas"], correcta:null },
+  { id:13, texto:"Según la última actualización, ¿cuántas aceitunas debemos colocar en las pizzas?",
+    opciones:["8 unidades","No es procedimiento","14 unidades","12 unidades"], correcta:null },
+  { id:14, texto:'¿Cuál es la definición del método "PEPS"?',
+    opciones:["Primero en entrar, primero en salir","Primero en vencer, primero en salir","Primero en encargar, primero en sacar"], correcta:0 },
+  { id:15, texto:"¿A qué temperatura se deben refrigerar las empanadas en el freezer?",
+    opciones:["0 °C a 10 °C","0 °C a 7 °C","Ninguno"], correcta:null },
+  { id:16, texto:"¿Cuántas unidades de empanadas se colocan en la bandeja para realizar la cocción?",
+    opciones:["10 unidades","12 unidades","6 unidades","8 unidades"], correcta:null },
+  { id:17, tipo:"grilla", texto:"Completá con el color de trapo correspondiente.",
+    filas:["Limpieza de superficies con alimentos","Limpieza de equipos","Limpieza de baños"],
+    columnas:["Verde","Azul","Amarillo"], correcta:null },
+  { id:18, texto:"¿Cuál es la temperatura correcta de la heladera de pizzas?",
+    opciones:["0 °C a 6 °C","0 °C a 2 °C","0 °C a 5 °C"], correcta:null },
+  { id:19, texto:"¿Cuántos criollitos se deben colocar en la placa para una cocción correcta?",
+    opciones:["20 unidades","21 unidades","28 unidades"], correcta:null },
+  { id:20, texto:"¿Cuál es la cantidad correcta de pizzas por estante en la heladera?",
+    opciones:["4 por estante","6 por estante","5 por estante","3 por estante"], correcta:null },
+  { id:21, texto:"¿En cuánto tiempo se debe descongelar el criollito?",
+    opciones:["6 a 8 horas","1 hora","4 a 5 horas"], correcta:null },
+  { id:22, texto:"¿Qué tipo de residuo debe colocarse en el tacho de color verde?",
+    opciones:["Residuos húmedos u orgánicos","Residuos peligrosos","Residuos electrónicos","Residuos reciclables (plástico, cartón, papel, vidrio)"], correcta:null },
+  { id:23, texto:"¿Cuál de los siguientes tipos de extintores es considerado el más versátil por cubrir casi todos los tipos de fuego?",
+    opciones:["Extintor ABC","Extintor de espuma","Extintor de agua","Extintor K"], correcta:0 },
+  { id:24, texto:"¿Qué es la cultura organizacional?",
+    opciones:["La cultura de Sabores","El “ADN” de la compañía: reúne los valores, creencias, normas y comportamientos que marcan cómo trabajan las personas, cómo se relacionan entre sí y cómo se toman decisiones dentro de la organización.","El ADN de nuestro control en las auditorías","La cultura del local"], correcta:1 },
+  { id:25, texto:"¿Cuál de las siguientes opciones describe mejor un onboarding efectivo?",
+    opciones:["Un proceso centrado únicamente en entregar manuales y procedimientos.","Un proceso integral que acompaña la adaptación cultural, técnica, social y emocional del nuevo colaborador.","Un proceso corto que se realiza solo el primer día."], correcta:1 },
+  { id:26, texto:"¿Cuál es la temperatura interna de la empanada cocida?",
+    opciones:["50 °C a 70 °C","40 °C a 60 °C","45 °C a 65 °C"], correcta:null },
+  { id:27, texto:"¿Qué mide el inaccuracy en Delivery?",
+    opciones:["Órdenes grandes","Órdenes mayores a 10 minutos en el local","Cantidad de órdenes con errores generados","Cantidad de órdenes"], correcta:2 }
+];
+
+/* ===========================================================
+   ESTADO
+   =========================================================== */
+const LETRAS = ["A","B","C","D","E"];
+let estado = "portada";       // portada | en_curso | cerrado
+let indice = 0;
+let salidas = 0;
+let ultimaSalida = 0;
+let restante = CONFIG.MINUTOS * 60;
+let cronometro = null;
+let inicio = null;
+let motivoCierre = null;
+const respuestas = {};        // id -> índice | array de índices
+const postulante = {};
+
+const $ = (id) => document.getElementById(id);
+
+/* ===========================================================
+   PORTADA
+   =========================================================== */
+$("reglaTiempo").textContent = CONFIG.MINUTOS + " minutos";
+$("reglaCant").textContent = PREGUNTAS.length;
+
+$("btnComenzar").addEventListener("click", async () => {
+  postulante.nombre = $("f_nombre").value.trim();
+  postulante.correo = $("f_correo").value.trim();
+  postulante.local  = $("f_local").value.trim();
+  postulante.puesto = $("f_puesto").value.trim();
+  if (!postulante.nombre || !postulante.local || !postulante.puesto) {
+    alert("Completá nombre, local y puesto para comenzar.");
+    return;
+  }
+  if (CONFIG.PANTALLA_COMPLETA && document.documentElement.requestFullscreen) {
+    try { await document.documentElement.requestFullscreen(); } catch (e) { /* el navegador puede negarlo */ }
+  }
+  estado = "en_curso";
+  inicio = new Date();
+  $("portada").classList.add("oculto");
+  $("examen").classList.remove("oculto");
+  $("cabecera").classList.remove("oculto");
+  $("pie").classList.remove("oculto");
+  $("quien").textContent = postulante.nombre + " · " + postulante.local;
+  armarRiel();
+  arrancarReloj();
+  pintar();
+});
+
+/* ===========================================================
+   RELOJ
+   =========================================================== */
+function arrancarReloj() {
+  actualizarReloj();
+  cronometro = setInterval(() => {
+    restante--;
+    actualizarReloj();
+    if (restante <= 0) finalizar("tiempo");
+  }, 1000);
+}
+function actualizarReloj() {
+  const m = Math.max(0, Math.floor(restante / 60));
+  const s = Math.max(0, restante % 60);
+  const r = $("reloj");
+  r.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  r.classList.toggle("bajo", restante <= 120);
+}
+
+/* ===========================================================
+   RIEL DE PROGRESO
+   =========================================================== */
+function armarRiel() {
+  $("riel").innerHTML = PREGUNTAS.map(() => "<i></i>").join("");
+}
+function pintarRiel() {
+  [...$("riel").children].forEach((el, i) => {
+    el.className = i < indice ? "hecha" : (i === indice ? "actual" : "");
+  });
+}
+
+/* ===========================================================
+   RENDER DE PREGUNTA
+   =========================================================== */
+function pintar() {
+  const p = PREGUNTAS[indice];
+  $("paso").textContent = "Pregunta " + (indice + 1) + " de " + PREGUNTAS.length;
+  $("enunciado").textContent = p.texto;
+  $("cuerpo").innerHTML = "";
+  $("btnSiguiente").disabled = true;
+  $("btnSiguiente").textContent = indice === PREGUNTAS.length - 1 ? "Entregar examen" : "Siguiente";
+  pintarRiel();
+
+  if (p.tipo === "grilla") pintarGrilla(p);
+  else pintarOpciones(p);
+
+  window.scrollTo(0, 0);
+}
+
+function pintarOpciones(p) {
+  const cont = document.createElement("div");
+  cont.className = "opciones";
+  p.opciones.forEach((texto, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "opcion";
+    b.innerHTML = '<span class="letra">' + LETRAS[i] + "</span><span></span>";
+    b.lastChild.textContent = texto;
+    b.addEventListener("click", () => {
+      [...cont.children].forEach((o) => o.classList.remove("sel"));
+      b.classList.add("sel");
+      respuestas[p.id] = i;
+      $("btnSiguiente").disabled = false;
+    });
+    cont.appendChild(b);
+  });
+  $("cuerpo").appendChild(cont);
+}
+
+function pintarGrilla(p) {
+  const t = document.createElement("table");
+  const cab = p.columnas.map((c) => "<th>" + c + "</th>").join("");
+  const filas = p.filas.map((f, i) =>
+    "<tr><td>" + f + "</td>" +
+    p.columnas.map((c, j) => '<td><input type="radio" name="g' + p.id + "_" + i + '" data-fila="' + i + '" data-col="' + j + '" aria-label="' + f + ": " + c + '"></td>').join("") +
+    "</tr>"
+  ).join("");
+  t.innerHTML = "<thead><tr><th></th>" + cab + "</tr></thead><tbody>" + filas + "</tbody>";
+  t.addEventListener("change", (e) => {
+    const actual = respuestas[p.id] || new Array(p.filas.length).fill(null);
+    actual[Number(e.target.dataset.fila)] = Number(e.target.dataset.col);
+    respuestas[p.id] = actual;
+    $("btnSiguiente").disabled = actual.some((v) => v === null || v === undefined);
+  });
+  $("cuerpo").appendChild(t);
+}
+
+$("btnSiguiente").addEventListener("click", () => {
+  if (indice === PREGUNTAS.length - 1) finalizar("entregado");
+  else { indice++; pintar(); }
+});
+
+/* ===========================================================
+   CONTROL DE SALIDA
+   =========================================================== */
+function marcarSalida(motivo) {
+  if (estado !== "en_curso") return;
+  const ahora = Date.now();
+  if (ahora - ultimaSalida < 1200) return;   // evita contar dos veces el mismo evento
+  ultimaSalida = ahora;
+  salidas++;
+  if (salidas > CONFIG.SALIDAS_PERMITIDAS) {
+    finalizar("salida:" + motivo);
+  } else {
+    $("avisoTexto").textContent =
+      "Detectamos que saliste de la ventana. Te queda " +
+      (CONFIG.SALIDAS_PERMITIDAS - salidas + 1) +
+      " aviso. Si volvés a salir, el examen se cierra con lo respondido hasta ahora.";
+    $("aviso").classList.add("ver");
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) marcarSalida("pestaña");
+});
+window.addEventListener("blur", () => marcarSalida("foco"));
+document.addEventListener("fullscreenchange", () => {
+  if (CONFIG.PANTALLA_COMPLETA && !document.fullscreenElement) marcarSalida("pantalla completa");
+});
+window.addEventListener("pagehide", () => {
+  if (estado === "en_curso") finalizar("abandono");
+});
+window.addEventListener("beforeunload", (e) => {
+  if (estado === "en_curso") { e.preventDefault(); e.returnValue = ""; }
+});
+
+$("btnVolver").addEventListener("click", async () => {
+  $("aviso").classList.remove("ver");
+  if (CONFIG.PANTALLA_COMPLETA && !document.fullscreenElement && document.documentElement.requestFullscreen) {
+    try { await document.documentElement.requestFullscreen(); } catch (e) { /* ignorado */ }
+  }
+});
+
+// Bloqueos de copia y menú contextual
+["contextmenu", "copy", "cut", "paste", "dragstart"].forEach((ev) =>
+  document.addEventListener(ev, (e) => { if (estado === "en_curso") e.preventDefault(); })
+);
+document.addEventListener("selectstart", (e) => {
+  if (estado === "en_curso" && !/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) e.preventDefault();
+});
+
+/* ===========================================================
+   CIERRE Y RESULTADO
+   =========================================================== */
+function finalizar(motivo) {
+  if (estado !== "en_curso") return;
+  estado = "cerrado";
+  motivoCierre = motivo;
+  clearInterval(cronometro);
+  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  const payload = armarPayload();
+  enviar(payload);
+  mostrarResultado(payload);
+}
+
+function esCorrecta(p) {
+  if (p.correcta === null || p.correcta === undefined) return null;   // S/D
+  const r = respuestas[p.id];
+  if (r === undefined) return false;
+  if (Array.isArray(p.correcta)) return Array.isArray(r) && p.correcta.every((v, i) => r[i] === v);
+  return r === p.correcta;
+}
+
+function textoRespuesta(p) {
+  const r = respuestas[p.id];
+  if (r === undefined) return "Sin responder";
+  if (p.tipo === "grilla") {
+    return p.filas.map((f, i) => f + ": " + (r[i] === null || r[i] === undefined ? "—" : p.columnas[r[i]])).join(" · ");
+  }
+  return p.opciones[r];
+}
+
+function armarPayload() {
+  const detalle = PREGUNTAS.map((p) => ({
+    id: p.id,
+    pregunta: p.texto,
+    respuesta: respuestas[p.id] === undefined ? null : textoRespuesta(p),
+    resultado: esCorrecta(p) === null ? "S/D" : (esCorrecta(p) ? "correcta" : "incorrecta")
+  }));
+  const conClave = detalle.filter((d) => d.resultado !== "S/D");
+  const aciertos = conClave.filter((d) => d.resultado === "correcta").length;
+  const porcentaje = conClave.length ? Math.round((aciertos / conClave.length) * 100) : null;
+  return {
+    examen: "Ascenso Sabores Express",
+    postulante,
+    inicio: inicio ? inicio.toISOString() : null,
+    fin: new Date().toISOString(),
+    segundos_usados: CONFIG.MINUTOS * 60 - Math.max(0, restante),
+    motivo_cierre: motivoCierre,
+    salidas_detectadas: salidas,
+    respondidas: Object.keys(respuestas).length,
+    total_preguntas: PREGUNTAS.length,
+    aciertos,
+    evaluadas: conClave.length,
+    sin_clave: detalle.length - conClave.length,
+    porcentaje,
+    condicion: porcentaje === null ? "S/D" : (porcentaje >= CONFIG.APROBADO ? "Aprobado" : "Desaprobado"),
+    detalle
+  };
+}
+
+function enviar(payload) {
+  if (!CONFIG.WEBHOOK_URL) return;
+  const cuerpo = JSON.stringify(payload);
+  try {
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon(CONFIG.WEBHOOK_URL, new Blob([cuerpo], { type: "application/json" }));
+    } else {
+      fetch(CONFIG.WEBHOOK_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: cuerpo, keepalive: true });
+    }
+  } catch (e) { /* el resultado igual queda en pantalla para copiar */ }
+}
+
+const TITULOS = {
+  entregado: "Examen entregado",
+  tiempo: "Se terminó el tiempo",
+  abandono: "Examen cerrado",
+  salida: "Examen cerrado por salir de la ventana"
+};
+
+function mostrarResultado(d) {
+  $("examen").classList.add("oculto");
+  $("pie").classList.add("oculto");
+  $("aviso").classList.remove("ver");
+  $("cabecera").classList.add("oculto");
+  const base = String(motivoCierre).split(":")[0];
+
+  const filas = d.detalle.map((x) => {
+    const etq = x.resultado === "correcta" ? '<span class="etq ok">OK</span>'
+      : x.resultado === "incorrecta" ? '<span class="etq mal">Error</span>'
+      : '<span class="etq sd">S/D</span>';
+    const resp = document.createElement("span");
+    resp.textContent = x.respuesta || "Sin responder";
+    return '<div class="fila"><span>' + x.id + ". " + x.pregunta + "<br><span class='gris'>" + resp.innerHTML + "</span></span>" + etq + "</div>";
+  }).join("");
+
+  const r = $("resultado");
+  r.classList.remove("oculto");
+  r.innerHTML =
+    "<h1>" + (TITULOS[base] || "Examen cerrado") + "</h1>" +
+    '<p class="gris">' + d.postulante.nombre + " · " + d.postulante.local + " · " + d.postulante.puesto + "</p>" +
+    '<div class="puntaje" style="margin-top:1.5rem">' + (d.porcentaje === null ? "S/D" : d.porcentaje + "%") + "</div>" +
+    '<p class="gris">' + d.aciertos + " de " + d.evaluadas + " preguntas evaluadas · " +
+      d.respondidas + " de " + d.total_preguntas + " respondidas" +
+      (d.sin_clave ? " · " + d.sin_clave + " sin clave cargada (S/D)" : "") + "</p>" +
+    '<p style="font-weight:600;margin-top:.5rem">Condición: ' + d.condicion + "</p>" +
+    '<div class="detalle">' + filas + "</div>" +
+    '<p class="gris" style="margin-top:1.5rem;font-size:.85rem">Resultado en JSON para cargar en la base:</p>' +
+    "<textarea readonly>" + JSON.stringify(d, null, 2) + "</textarea>";
+}
+</script>
+</body>
+</html>
