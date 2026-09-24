@@ -227,8 +227,7 @@ const CONFIG = {
   // Progreso por DNI. Con Supabase configurado el progreso es compartido entre dispositivos.
   // Sin Supabase se guarda solo en este navegador (sirve para probar, no para producción).
   SUPABASE_URL: null,       // p.ej. "https://xxxx.supabase.co"
-  SUPABASE_ANON_KEY: null,
-  SUPABASE_TABLA: "examen_resultados"
+  SUPABASE_ANON_KEY: null   // la tabla no es accesible con esta key: solo las funciones de supabase.sql
 };
 
 /* ===========================================================
@@ -326,9 +325,9 @@ const PREGUNTAS_GERENTE = [
 
 // Orden = orden de habilitación. Cada nivel se habilita al aprobar el anterior.
 const NIVELES = [
-  { id:"entrenador", nombre:"Entrenador", minutos:20, aprobado:70, preguntas:PREGUNTAS_ENTRENADOR },
-  { id:"encargado",  nombre:"Encargado",  minutos:20, aprobado:70, preguntas:PREGUNTAS_ENCARGADO },
-  { id:"gerente",    nombre:"Gerente",    minutos:25, aprobado:75, preguntas:PREGUNTAS_GERENTE }
+  { id:"entrenador", nombre:"Entrenador", minutos:15, aprobado:80, preguntas:PREGUNTAS_ENTRENADOR },
+  { id:"encargado",  nombre:"Encargado",  minutos:15, aprobado:80, preguntas:PREGUNTAS_ENCARGADO },
+  { id:"gerente",    nombre:"Gerente",    minutos:15, aprobado:80, preguntas:PREGUNTAS_GERENTE }
 ];
 
 /* ===========================================================
@@ -358,13 +357,20 @@ function limpiarDni(v) { return String(v).replace(/\D/g, ""); }
 
 async function leerAprobados(dni) {
   if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
-    const url = CONFIG.SUPABASE_URL + "/rest/v1/" + CONFIG.SUPABASE_TABLA +
-      "?select=nivel&condicion=eq.Aprobado&dni=eq." + encodeURIComponent(dni);
-    const r = await fetch(url, { headers: { apikey: CONFIG.SUPABASE_ANON_KEY, Authorization: "Bearer " + CONFIG.SUPABASE_ANON_KEY } });
+    const r = await rpc("niveles_aprobados", { p_dni: dni });
     if (!r.ok) throw new Error("Supabase " + r.status);
-    return [...new Set((await r.json()).map((x) => x.nivel))];
+    return (await r.json()) || [];
   }
   try { return JSON.parse(localStorage.getItem("aprobados_" + dni)) || []; } catch (e) { return []; }
+}
+
+function rpc(nombre, datos) {
+  return fetch(CONFIG.SUPABASE_URL + "/rest/v1/rpc/" + nombre, {
+    method: "POST", keepalive: true,
+    headers: { "Content-Type": "application/json", apikey: CONFIG.SUPABASE_ANON_KEY,
+      Authorization: "Bearer " + CONFIG.SUPABASE_ANON_KEY },
+    body: JSON.stringify(datos)
+  });
 }
 
 function guardarLocal(dni, nivelId) {
@@ -677,13 +683,9 @@ function enviar(payload) {
   const cuerpo = JSON.stringify(payload);
   if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
     try {
-      fetch(CONFIG.SUPABASE_URL + "/rest/v1/" + CONFIG.SUPABASE_TABLA, {
-        method: "POST", keepalive: true,
-        headers: { "Content-Type": "application/json", apikey: CONFIG.SUPABASE_ANON_KEY,
-          Authorization: "Bearer " + CONFIG.SUPABASE_ANON_KEY, Prefer: "return=minimal" },
-        body: JSON.stringify({ dni: payload.dni, nivel: payload.nivel, porcentaje: payload.porcentaje,
-          condicion: payload.condicion, nombre: payload.postulante.nombre, local: payload.postulante.local, payload })
-      }).catch(() => {});
+      rpc("registrar_resultado", { p_dni: payload.dni, p_nivel: payload.nivel, p_porcentaje: payload.porcentaje,
+        p_condicion: payload.condicion, p_nombre: payload.postulante.nombre, p_local: payload.postulante.local,
+        p_payload: payload }).catch(() => {});
     } catch (e) { /* el resultado igual queda en pantalla para copiar */ }
   }
   if (!CONFIG.WEBHOOK_URL) return;
