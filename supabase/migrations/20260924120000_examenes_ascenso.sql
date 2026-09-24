@@ -1,6 +1,7 @@
 -- ============================================================
 -- Exámenes de ascenso — Supabase
--- Correr completo en: Supabase > SQL Editor > New query > Run.
+-- Migración: la integración de Supabase con GitHub la aplica al mergear a main.
+-- (También se puede correr a mano en Supabase > SQL Editor.)
 -- Se puede volver a correr sin romper nada.
 --
 -- La tabla queda cerrada: con la anon key solo se pueden usar las
