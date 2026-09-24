@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Examen de ascenso — Sabores Express</title>
+<title>Exámenes de ascenso</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -126,6 +126,27 @@ footer{
 .etq.sd{background:var(--fondo);color:var(--gris)}
 textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid var(--linea);border-radius:var(--radio);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;background:var(--papel)}
 .oculto{display:none !important}
+
+/* Marcas */
+.marcas{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1.25rem}
+.marcas button{padding:.55rem 1.1rem;background:var(--papel);border:1px solid var(--linea);border-radius:999px;cursor:pointer;font-weight:600}
+.marcas button[aria-checked="true"]{background:var(--tinta);border-color:var(--tinta);color:#fff}
+
+/* Niveles */
+.dni-fila{display:flex;gap:.6rem;max-width:30rem;align-items:flex-end}
+.dni-fila .campo{flex:1;margin-bottom:0}
+.niveles{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;max-width:40rem;margin:1.5rem 0}
+.nivel{
+  text-align:left;padding:1rem;background:var(--papel);border:1px solid var(--linea);
+  border-radius:var(--radio);cursor:pointer;display:flex;flex-direction:column;gap:.35rem;
+}
+.nivel .num{font-size:.75rem;color:var(--gris);font-weight:600}
+.nivel strong{font-size:1.05rem}
+.nivel.bloq{cursor:not-allowed;opacity:.55}
+.nivel.hecho{cursor:default}
+.nivel.sel{border-color:var(--verde);background:var(--verde-suave)}
+.nivel .etq{align-self:flex-start}
+@media(max-width:560px){.niveles{grid-template-columns:1fr}.dni-fila{flex-direction:column;align-items:stretch}}
 @media(max-width:560px){.reloj{font-size:1.6rem}h1{font-size:1.4rem}h2{font-size:1.15rem}main{padding:1.5rem 1rem 7rem}}
 </style>
 </head>
@@ -133,7 +154,7 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
 
 <header id="cabecera" class="oculto">
   <div class="barra">
-    <div class="marca">Examen de ascenso<span id="quien">Sabores Express</span></div>
+    <div class="marca">Examen de ascenso<span id="quien"></span></div>
     <div class="reloj" id="reloj">00:00</div>
   </div>
   <div class="riel" id="riel"></div>
@@ -142,25 +163,38 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
 <main>
   <!-- PORTADA -->
   <section id="portada">
-    <h1>Examen de ascenso — Sabores Express</h1>
-    <p class="gris">Evaluación de conocimientos operativos, seguridad alimentaria y cultura organizacional.</p>
+    <h1 id="tituloPortada">Exámenes de ascenso</h1>
+    <p class="gris">Tres niveles: Entrenador, Encargado y Gerente. Cada nivel se habilita al aprobar el anterior.</p>
 
-    <div class="reglas">
-      <ul>
-        <li>Tenés <strong id="reglaTiempo">20 minutos</strong> para responder <strong id="reglaCant">22</strong> preguntas.</li>
-        <li>Se responde de a una pregunta por vez y no se puede volver atrás.</li>
-        <li class="dura">Si cambiás de pestaña, minimizás o salís de pantalla completa, el examen se cierra automáticamente con lo respondido hasta ese momento.</li>
-        <li class="dura">Cuando el tiempo llega a cero, se entrega solo.</li>
-      </ul>
+    <div class="marcas" id="marcas" role="radiogroup" aria-label="Marca"></div>
+
+    <div class="dni-fila" style="margin-top:1.5rem">
+      <div class="campo"><label for="f_dni">DNI (sin puntos)</label><input id="f_dni" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+      <button class="btn" id="btnConsultar">Consultar</button>
     </div>
+    <p class="gris" id="estadoDni" style="font-size:.85rem;margin-top:.5rem"></p>
 
-    <div class="campo"><label for="f_nombre">Nombre y apellido</label><input id="f_nombre" autocomplete="name"></div>
-    <div class="campo"><label for="f_correo">Correo</label><input id="f_correo" type="email" autocomplete="email"></div>
-    <div class="campo"><label for="f_local">Local</label><input id="f_local"></div>
-    <div class="campo"><label for="f_puesto">Puesto actual / puesto al que asciende</label><input id="f_puesto"></div>
+    <div id="bloqueNiveles" class="oculto">
+      <div class="niveles" id="niveles"></div>
 
-    <p class="gris" style="font-size:.85rem;margin-top:1.5rem">Al comenzar se activa la pantalla completa y el control de salida.</p>
-    <button class="btn" id="btnComenzar" style="margin-top:.5rem">Comenzar examen</button>
+      <div id="bloqueDatos" class="oculto">
+        <div class="reglas">
+          <ul>
+            <li>Nivel <strong id="reglaNivel"></strong>: tenés <strong id="reglaTiempo"></strong> para responder <strong id="reglaCant"></strong> preguntas. Se aprueba con <strong id="reglaAprobado"></strong>.</li>
+            <li>Se responde de a una pregunta por vez y no se puede volver atrás.</li>
+            <li class="dura">Si cambiás de pestaña, minimizás o salís de pantalla completa, el examen se cierra automáticamente con lo respondido hasta ese momento.</li>
+            <li class="dura">Cuando el tiempo llega a cero, se entrega solo.</li>
+          </ul>
+        </div>
+
+        <div class="campo"><label for="f_nombre">Nombre y apellido</label><input id="f_nombre" autocomplete="name"></div>
+        <div class="campo"><label for="f_correo">Correo</label><input id="f_correo" type="email" autocomplete="email"></div>
+        <div class="campo"><label for="f_local">Local</label><input id="f_local" list="lista_locales"><datalist id="lista_locales"></datalist></div>
+
+        <p class="gris" style="font-size:.85rem;margin-top:1.5rem">Al comenzar se activa la pantalla completa y el control de salida.</p>
+        <button class="btn" id="btnComenzar" style="margin-top:.5rem">Comenzar examen</button>
+      </div>
+    </div>
   </section>
 
   <!-- PREGUNTA -->
@@ -194,66 +228,181 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
    CONFIGURACIÓN
    =========================================================== */
 const CONFIG = {
-  MINUTOS: 20,              // tiempo total del examen
   SALIDAS_PERMITIDAS: 0,    // 0 = cierra al primer intento de salir. 1 = un aviso y recién a la segunda cierra.
   PANTALLA_COMPLETA: true,  // pide fullscreen al comenzar; salir de fullscreen cuenta como salida
-  APROBADO: 70,             // % mínimo de aprobación (sobre preguntas con clave cargada)
-  WEBHOOK_URL: null         // p.ej. "https://n8n.tu-dominio.com/webhook/examen" o el REST de Supabase. null = no envía.
+  LOCALES: [],              // p.ej. ["Caseros 2", "Lavalle 2"]. Vacío = campo de texto libre.
+  WEBHOOK_URL: null,        // p.ej. "https://n8n.tu-dominio.com/webhook/examen". null = no envía.
+  // Progreso por DNI. Con Supabase configurado el progreso es compartido entre dispositivos.
+  // Sin Supabase se guarda solo en este navegador (sirve para probar, no para producción).
+  SUPABASE_URL: null,       // p.ej. "https://xxxx.supabase.co"
+  ESPERA_HORAS: 48,         // tras desaprobar o cerrar un examen, horas hasta poder volver a rendir ese nivel
+  SUPABASE_ANON_KEY: null   // la tabla no es accesible con esta key: solo las funciones de supabase.sql
 };
 
 /* ===========================================================
-   PREGUNTAS
+   PREGUNTAS (fuente: Manual de Operaciones Sabores Express)
    correcta = índice de la opción correcta (0 = primera).
-   null = S/D, sin clave cargada: no puntúa.
-   Grilla: correcta = [colFila1, colFila2, colFila3].
+   Al comenzar, el orden de preguntas y de opciones se mezcla al azar.
+   Grilla: correcta = [colFila1, colFila2, ...] (no se mezcla).
    =========================================================== */
-const PREGUNTAS = [
-  { id:5,  texto:"¿Cuál es el tiempo de cinta del horno POWER HOT?",
-    opciones:["5 a 7 minutos","3 a 5 minutos","6 a 8 minutos","10 a 11 minutos"], correcta:null },
-  { id:6,  texto:"¿Cuál es el tiempo de cinta del horno BURNER?",
-    opciones:["6 a 8 minutos","5 a 7 minutos","8 a 10 minutos","3 a 5 minutos"], correcta:null },
-  { id:7,  texto:"¿A qué temperatura se cocinan las empanadas en el horno de cinta?",
-    opciones:["230 a 250 °C","150 a 180 °C","200 a 220 °C","265 a 280 °C"], correcta:null },
-  { id:8,  texto:"¿Cuál es el vencimiento de las empanadas de jamón y queso y de jamón y roquefort?",
-    opciones:["5 días","3 días","9 días","7 días"], correcta:null },
-  { id:9,  texto:"¿Cuál es el vencimiento del resto de los gustos de empanadas?",
-    opciones:["5 días","7 días","3 días","10 días"], correcta:null },
-  { id:10, texto:"¿Cuál es la cantidad máxima de empanadas por bandeja para hornear?",
-    opciones:["6 unidades","10 unidades","8 unidades","5 unidades"], correcta:null },
-  { id:12, texto:"Leudado de las medialunas: tiempo y cocción.",
-    opciones:["8 horas, 32 por bandeja, 4 filas de 8 medialunas","7 horas, 28 por bandeja, 4 filas de 7 medialunas","8 horas, 28 por bandeja, 4 filas de 7 medialunas"], correcta:null },
-  { id:13, texto:"Según la última actualización, ¿cuántas aceitunas debemos colocar en las pizzas?",
-    opciones:["8 unidades","No es procedimiento","14 unidades","12 unidades"], correcta:null },
-  { id:14, texto:'¿Cuál es la definición del método "PEPS"?',
-    opciones:["Primero en entrar, primero en salir","Primero en vencer, primero en salir","Primero en encargar, primero en sacar"], correcta:0 },
-  { id:15, texto:"¿A qué temperatura se deben refrigerar las empanadas en el freezer?",
-    opciones:["0 °C a 10 °C","0 °C a 7 °C","Ninguno"], correcta:null },
-  { id:16, texto:"¿Cuántas unidades de empanadas se colocan en la bandeja para realizar la cocción?",
-    opciones:["10 unidades","12 unidades","6 unidades","8 unidades"], correcta:null },
-  { id:17, tipo:"grilla", texto:"Completá con el color de trapo correspondiente.",
-    filas:["Limpieza de superficies con alimentos","Limpieza de equipos","Limpieza de baños"],
-    columnas:["Verde","Azul","Amarillo"], correcta:null },
-  { id:18, texto:"¿Cuál es la temperatura correcta de la heladera de pizzas?",
-    opciones:["0 °C a 6 °C","0 °C a 2 °C","0 °C a 5 °C"], correcta:null },
-  { id:19, texto:"¿Cuántos criollitos se deben colocar en la placa para una cocción correcta?",
-    opciones:["20 unidades","21 unidades","28 unidades"], correcta:null },
-  { id:20, texto:"¿Cuál es la cantidad correcta de pizzas por estante en la heladera?",
-    opciones:["4 por estante","6 por estante","5 por estante","3 por estante"], correcta:null },
-  { id:21, texto:"¿En cuánto tiempo se debe descongelar el criollito?",
-    opciones:["6 a 8 horas","1 hora","4 a 5 horas"], correcta:null },
-  { id:22, texto:"¿Qué tipo de residuo debe colocarse en el tacho de color verde?",
-    opciones:["Residuos húmedos u orgánicos","Residuos peligrosos","Residuos electrónicos","Residuos reciclables (plástico, cartón, papel, vidrio)"], correcta:null },
-  { id:23, texto:"¿Cuál de los siguientes tipos de extintores es considerado el más versátil por cubrir casi todos los tipos de fuego?",
-    opciones:["Extintor ABC","Extintor de espuma","Extintor de agua","Extintor K"], correcta:0 },
-  { id:24, texto:"¿Qué es la cultura organizacional?",
-    opciones:["La cultura de Sabores","El “ADN” de la compañía: reúne los valores, creencias, normas y comportamientos que marcan cómo trabajan las personas, cómo se relacionan entre sí y cómo se toman decisiones dentro de la organización.","El ADN de nuestro control en las auditorías","La cultura del local"], correcta:1 },
-  { id:25, texto:"¿Cuál de las siguientes opciones describe mejor un onboarding efectivo?",
-    opciones:["Un proceso centrado únicamente en entregar manuales y procedimientos.","Un proceso integral que acompaña la adaptación cultural, técnica, social y emocional del nuevo colaborador.","Un proceso corto que se realiza solo el primer día."], correcta:1 },
-  { id:26, texto:"¿Cuál es la temperatura interna de la empanada cocida?",
-    opciones:["50 °C a 70 °C","40 °C a 60 °C","45 °C a 65 °C"], correcta:null },
-  { id:27, texto:"¿Qué mide el inaccuracy en Delivery?",
-    opciones:["Órdenes grandes","Órdenes mayores a 10 minutos en el local","Cantidad de órdenes con errores generados","Cantidad de órdenes"], correcta:2 }
+
+// Nivel 1 — Entrenador: productos, equipos, higiene y atención.
+const PREGUNTAS_ENTRENADOR = [
+  { id:1, texto:"¿Cuál es el tiempo de cinta del horno BURNER?",
+    opciones:["5 a 7 minutos","6 a 8 minutos","3 a 5 minutos","10 a 11 minutos"], correcta:0 },
+  { id:2, texto:"¿A qué temperatura se cocinan las empanadas en el horno de cinta?",
+    opciones:["265 °C a 280 °C","200 °C a 220 °C","230 °C a 250 °C","150 °C a 180 °C"], correcta:0 },
+  { id:3, texto:"¿Cuál es la cantidad máxima de empanadas por bandeja para hornear?",
+    opciones:["8 unidades, sin que se toquen","6 unidades","10 unidades","12 unidades"], correcta:0 },
+  { id:4, texto:"¿Cuál es el vencimiento de las empanadas de jamón y queso y de jamón y roquefort?",
+    opciones:["7 días","5 días","3 días","9 días"], correcta:0 },
+  { id:5, texto:"¿Cuál es el vencimiento del resto de los gustos de empanadas?",
+    opciones:["5 días","7 días","3 días","10 días"], correcta:0 },
+  { id:6, texto:"¿Qué temperatura interna debe registrar el pirómetro en una empanada cocida?",
+    opciones:["Entre 55 °C y 65 °C","Entre 40 °C y 50 °C","Entre 70 °C y 90 °C","Entre 30 °C y 45 °C"], correcta:0 },
+  { id:7, texto:"Medialunas: tiempo de leudado y armado de bandeja.",
+    opciones:["8 horas exactas, 28 por bandeja en 4 filas de 7","7 horas, 28 por bandeja en 4 filas de 7","8 horas, 32 por bandeja en 4 filas de 8","6 horas, 24 por bandeja en 4 filas de 6"], correcta:0 },
+  { id:8, texto:"¿Cuántas chipás se colocan por bandeja para descongelar?",
+    opciones:["60 unidades (6 filas de 10)","50 unidades (5 filas de 10)","40 unidades (4 filas de 10)","72 unidades (6 filas de 12)"], correcta:0 },
+  { id:9, texto:"¿Cuántos criollitos se colocan en la placa para su cocción?",
+    opciones:["21 unidades (3 filas de 7)","20 unidades (4 filas de 5)","28 unidades (4 filas de 7)","24 unidades (3 filas de 8)"], correcta:0 },
+  { id:10, texto:"¿Cuántas pizzas se colocan por estante en la heladera?",
+    opciones:["5 por estante, sectorizadas por gusto","4 por estante","6 por estante","3 por estante"], correcta:0 },
+  { id:11, texto:"¿A qué temperatura debe estar la cámara de frío?",
+    opciones:["0 °C a 5 °C","-15 °C a -20 °C","5 °C a 10 °C","-5 °C a 0 °C"], correcta:0 },
+  { id:12, texto:'¿Qué significa el método "PEPS"?',
+    opciones:["Primero en entrar, primero en salir","Primero en vencer, primero en salir","Primero en encargar, primero en sacar","Productos en perfecto estado"], correcta:0 },
+  { id:13, texto:"Cuando llega mercadería de fábrica, ¿cómo se ordena en la heladera?",
+    opciones:["Lo nuevo abajo y lo que ya estaba en stock arriba","Lo nuevo arriba y lo viejo abajo","Todo mezclado por gusto","Lo nuevo al fondo de la cámara sin rotular"], correcta:0 },
+  { id:14, tipo:"grilla", texto:"Completá con el color de trapo correspondiente.",
+    filas:["Limpieza de baños","Superficies y utensilios en contacto con alimentos","Limpieza de equipos (hornos, heladeras)"],
+    columnas:["Verde","Azul","Amarillo"], correcta:[2,0,1] },
+  { id:15, texto:"¿Cómo se prepara el agua sanitizada y cuánto dura?",
+    opciones:["2 tapas de lavandina en 2 litros de agua, vence a las 4 horas","1 tapa de lavandina en 5 litros, vence a las 8 horas","2 tapas en 1 litro, vence a las 24 horas","Media tapa en 2 litros, dura todo el turno"], correcta:0 },
+  { id:16, texto:"Además de al ingresar, después del baño o de tocar dinero, ¿cada cuánto nos lavamos las manos?",
+    opciones:["Cada 1 hora","Cada 4 horas","Solo al terminar el turno","Una vez por turno"], correcta:0 },
+  { id:17, texto:"¿Cuándo se pintan las medialunas con almíbar?",
+    opciones:["Únicamente al momento de la entrega al cliente, con pincel de silicona","Apenas salen del horno, con pincel de cerdas","Antes de hornearlas","Al abrir el local, todas juntas"], correcta:0 },
+  { id:18, texto:"Un cliente va a llevar 2 empanadas. ¿Qué le ofrecemos?",
+    opciones:["La promo de 3 empanadas + gaseosa","Nada, ya decidió","Media docena","Un descuento en la próxima compra"], correcta:0 },
+  { id:19, texto:"¿Cuál de los siguientes extintores es el más versátil por cubrir casi todos los tipos de fuego?",
+    opciones:["Extintor ABC","Extintor K","Extintor de agua","Extintor de espuma"], correcta:0 },
+  { id:20, texto:"¿Qué va en el tacho verde (reciclables)?",
+    opciones:["Tickets, cartón seco, servilletas y bolsas secas, limpios y sin restos","Restos de comida y cartón húmedo","Residuos de baño","Papel manteca sucio y servilletas usadas"], correcta:0 }
 ];
+
+// Nivel 2 — Encargado: delivery, Data Live, caja, pedidos y seguridad.
+const PREGUNTAS_ENCARGADO = [
+  { id:101, texto:"¿Qué mide el Inaccuracy en Delivery?",
+    opciones:["La cantidad de órdenes con errores generados desde la operación","El tiempo de espera del rider","La cantidad de órdenes del día","Los pedidos que cancela el cliente"], correcta:0 },
+  { id:102, texto:"¿Cuál es el objetivo de Inaccuracy por local?",
+    opciones:["Estar por debajo del 2,5%","Estar por debajo del 5%","Estar por debajo del 10%","Estar por encima del 2,5%"], correcta:0 },
+  { id:103, texto:"¿Qué son los rechazos en delivery?",
+    opciones:["Pedidos que el local cancela por falta de producto, fallas operativas o alta demanda","Pedidos que el cliente devuelve","Pedidos que el rider no retira","Pedidos con demora mayor a 10 minutos"], correcta:0 },
+  { id:104, texto:"¿Qué mide el AWT (tiempo de espera evitable)?",
+    opciones:["Órdenes donde el rider espera más de 10 minutos en el local hasta retirar el pedido","Órdenes entregadas fuera de horario","Órdenes con productos faltantes","El tiempo total de entrega al cliente"], correcta:0 },
+  { id:105, texto:"Falta un producto de un pedido de delivery. ¿Qué hacemos?",
+    opciones:["No enviamos productos sustitutos","Enviamos un producto parecido","Enviamos el pedido sin avisar","Agregamos una gaseosa de regalo"], correcta:0 },
+  { id:106, texto:"Cuando llega el rider, ¿cómo confirmamos qué pedido entregarle?",
+    opciones:["Con el nombre del cliente y los últimos 4 números de la orden, verificando el ticket antes de precintar","Con el nombre del rider","Por el color de la bolsa","Le damos el primero que esté listo"], correcta:0 },
+  { id:107, texto:"¿Hasta qué hora se genera el pedido a fábrica en Data Live para recibirlo al día siguiente?",
+    opciones:["Antes de las 15 hs (los sábados, el refuerzo antes de las 11 hs)","Antes de las 12 hs","Antes de las 18 hs","Antes de las 20 hs"], correcta:0 },
+  { id:108, texto:"Las empanadas se piden a fábrica en múltiplos de:",
+    opciones:["50 unidades","12 unidades","35 unidades","100 unidades"], correcta:0 },
+  { id:109, texto:"¿Hasta cuándo se hace el pedido en Coca-Cola a un Click?",
+    opciones:["Antes de las 12:00 hs del día anterior a la entrega","Antes de las 16:00 hs del día anterior","El mismo día de la entrega","Antes de las 15:00 hs del día anterior"], correcta:0 },
+  { id:110, texto:"¿Cómo se hacen los egresos de caja?",
+    opciones:["En fajos de $20.000 con el ticket de egreso, y se envían al cofre","En fajos de $10.000 sin comprobante","En un sobre al final del mes","Se entregan en mano al encargado siguiente"], correcta:0 },
+  { id:111, texto:"¿Cuál es la función del Testigo en el manejo de dinero?",
+    opciones:["Verificar que lo contado por el gerencial es correcto (doble control)","Contar el dinero solo","Firmar la planilla sin controlar","Llevar los bolsines al banco"], correcta:0 },
+  { id:112, texto:"Sin generador, ¿cuándo se activa el protocolo de corte de luz?",
+    opciones:["Cuando se confirma que el corte será mayor a 3 horas","Apenas se corta la luz","Cuando el corte supera 1 hora","Al día siguiente"], correcta:0 },
+  { id:113, texto:"¿Dónde se enciende el grupo electrógeno?",
+    opciones:["Siempre fuera del local","Dentro del local con la puerta abierta","En la cocina, cerca del tablero","Donde haya lugar"], correcta:0 },
+  { id:114, texto:"Con el generador en marcha, ¿qué equipos son prioridad?",
+    opciones:["Cámara frigorífica, DVR y horno a gas","La batea y los focos","Todas las térmicas, incluidas las tetrapolares","Las heladeras de bebidas"], correcta:0 },
+  { id:115, texto:"Al recibir mercadería por traslado, ¿cómo controlamos la calidad de las empanadas?",
+    opciones:["Cocinamos dos empanadas de cada bandeja (primera y última fila)","Probamos una empanada al azar","Solo revisamos el remito","No hace falta controlar"], correcta:0 },
+  { id:116, texto:'¿Qué significa "PAS" ante un accidente?',
+    opciones:["Proteger, Avisar, Socorrer","Prevenir, Actuar, Sanar","Parar, Analizar, Seguir","Pedir, Asistir, Salir"], correcta:0 },
+  { id:117, texto:"Ocurre un accidente laboral a las 21 hs. ¿A quién se contacta para la denuncia?",
+    opciones:["A la ART, con el Anexo 1 completo (SyH atiende de 9 a 18 hs)","Al equipo de Seguridad e Higiene al día siguiente","A nadie si no es grave","Solo a RR.HH."], correcta:0 },
+  { id:118, texto:"Un cliente paga con un billete dudoso. ¿Qué hacemos?",
+    opciones:["Pedimos asistencia al responsable de turno, doble verificación y solicitamos otro medio de pago","Lo aceptamos para no perder la venta","Lo retenemos y llamamos a la policía","Lo aceptamos y lo informamos al cierre"], correcta:0 },
+  { id:119, texto:"Con la lapicera detectora, ¿qué indica una marca oscura o negra?",
+    opciones:["Billete sospechoso","Billete auténtico","Billete de baja denominación","Que la lapicera está nueva"], correcta:0 },
+  { id:120, texto:"¿Para qué tipo de fuego se usa el extintor K?",
+    opciones:["Aceites vegetales y grasas de cocina","Tableros eléctricos","Papel y madera","Gasolina y solventes"], correcta:0 }
+];
+
+// Nivel 3 — Gerente: administración, inspecciones, RR.HH. y gestión.
+const PREGUNTAS_GERENTE = [
+  { id:201, texto:"¿Cuál es el orden del plan de carrera?",
+    opciones:["Principiante → Entrenador → Encargado de turno → Gte. de Local → Supervisor → Asistente → Gte. de Operaciones",
+      "Principiante → Encargado de turno → Entrenador → Gte. de Local → Asistente → Supervisor → Gte. de Operaciones",
+      "Entrenador → Principiante → Encargado de turno → Supervisor → Gte. de Local → Asistente → Gte. de Operaciones",
+      "Principiante → Entrenador → Gte. de Local → Encargado de turno → Supervisor → Gte. de Operaciones → Asistente"], correcta:0 },
+  { id:202, texto:"¿Quiénes están autorizados a modificar el stock de cierre en Data Live?",
+    opciones:["Solo los Gerentes de Operaciones","El Gerente de Local","Cualquier encargado de turno","Auditoría"], correcta:0 },
+  { id:203, texto:'Al cargar el inventario de fin de mes, ¿qué pasa si se presiona "Volver"?',
+    opciones:["El inventario queda en 0 y el mes siguiente no se podrá vender ningún producto","Se guarda automáticamente","Se envía a auditoría para revisión","No pasa nada"], correcta:0 },
+  { id:204, texto:"¿Quiénes pueden visualizar las diferencias de stock?",
+    opciones:["Gerentes Zonales, Gerentes de Operaciones, Asistentes y Auditoría","Todo el personal del local","Solo el Gerente de Local","Solo RR.HH."], correcta:0 },
+  { id:205, texto:"¿Qué comprobante debe tener un gasto para ser válido?",
+    opciones:["Factura A a nombre de la razón social del local","Ticket o Factura B","Factura C","Cualquier comprobante con foto"], correcta:0 },
+  { id:206, texto:"Llega un inspector y labra un acta. ¿Qué corresponde?",
+    opciones:["Avisar urgente al Gerente Zonal con foto del acta; el original se entrega dentro de las 48 hs","Guardar el acta hasta fin de mes","Avisar solo si hay multa","Entregar el original dentro de los 7 días"], correcta:0 },
+  { id:207, texto:"¿Qué NO están autorizados a hacer los inspectores?",
+    opciones:["Manipular la caja, hacer arqueos o tocar el punto de venta","Ingresar al local","Labrar un acta","Pedir documentación"], correcta:0 },
+  { id:208, texto:"¿Cuál es la vigencia del REBA y con cuánta anticipación se avisa su renovación?",
+    opciones:["1 año; avisar 60 días antes a Habilitaciones","2 años; avisar 30 días antes","1 año; avisar 7 días antes","6 meses; avisar 15 días antes"], correcta:0 },
+  { id:209, texto:"Ante un daño en el inmueble (siniestro), ¿en qué plazo se envía la documentación?",
+    opciones:["Dentro de las primeras 72 horas","Dentro de las 24 horas","Dentro de los 7 días","A fin de mes"], correcta:0 },
+  { id:210, texto:"En iCheck, ¿qué dato se carga en el campo Legajo?",
+    opciones:["El número de DNI, sin excepciones","El CUIL","Un número interno correlativo","El teléfono del empleado"], correcta:0 },
+  { id:211, texto:"¿Quién carga las justificaciones en iCheck y cuándo?",
+    opciones:["Exclusivamente el Gerente de Local, el mismo día a justificar","Cualquier empleado, a fin de mes","RR.HH., al liquidar","El encargado, una vez por semana"], correcta:0 },
+  { id:212, texto:"¿Cuándo es el cierre de novedades para la liquidación?",
+    opciones:["El día 20 (excepciones hasta el día 30)","El día 1","El día 15","El último día hábil del mes"], correcta:0 },
+  { id:213, texto:"¿Desde cuándo son efectivos los ascensos?",
+    opciones:["Desde el 1° de cada mes, comunicándolo el mes anterior","Desde el día que se comunica","Desde mitad de mes","A los 30 días de la evaluación"], correcta:0 },
+  { id:214, texto:"En el tablero de asistencia de iCheck, ¿qué indica el color celeste?",
+    opciones:["Fichada justificada","Ausencia de fichada","Fichada correcta","Fichada fuera de rango"], correcta:0 },
+  { id:215, texto:"¿Quién está autorizado a enviar solicitudes de traslado de personal?",
+    opciones:["Solo el Gerente Zonal (con la solicitud firmada por el Gerente Regional)","El Gerente de Local","El propio empleado","El encargado de turno"], correcta:0 },
+  { id:216, texto:"¿Qué se requiere para cargar una licencia por enfermedad?",
+    opciones:["Adjuntar el certificado médico; el reposo vale solo si está indicado en él","Solo el aviso por WhatsApp","Nada si es de un día","La firma del encargado"], correcta:0 },
+  { id:217, texto:"Coca-Cola no entrega y hay quiebre de stock. ¿Cuál es el tope para comprar a un distribuidor externo?",
+    opciones:["Hasta un 40% más caro que Coca-Cola, con autorización del Gte. Zonal y Regional","Sin tope, lo importante es tener stock","Hasta un 10% más caro","El encargado compra lo que haga falta"], correcta:0 },
+  { id:218, texto:'¿Qué competencia se define como "identificar potenciales y gestionar los talentos del equipo"?',
+    opciones:["Coaching","Liderazgo","Compromiso","Perfil comercial"], correcta:0 },
+  { id:219, texto:"¿Cuál es la misión de Sabores Express?",
+    opciones:["Satisfacer las necesidades del cliente con un vínculo comercial sustentable, la mejor calidad al menor precio posible","Ser la empresa líder en take away y delivery a nivel nacional","Honestidad, integridad y respeto","Abrir la mayor cantidad de locales posible"], correcta:0 },
+  { id:220, texto:"¿Qué documento debe exhibirse en la pared del local, de fácil acceso para una inspección?",
+    opciones:["REBA, fumigación, análisis de agua, habilitación y formulario 960 ARCA","Solo la habilitación","Ninguno, se muestran si los piden","El plan de carrera"], correcta:0 }
+];
+
+// Extremas: mismos niveles y criterios que Sabores. Bancos pendientes de cargar desde su manual.
+const EXTREMAS_ENTRENADOR = [];
+const EXTREMAS_ENCARGADO = [];
+const EXTREMAS_GERENTE = [];
+
+// Mismo criterio para todas las marcas: 15 minutos y 80% para aprobar.
+// Orden = orden de habilitación. Cada nivel se habilita al aprobar el anterior.
+function armarNiveles(entrenador, encargado, gerente) {
+  return [
+    { id:"entrenador", nombre:"Entrenador", minutos:15, aprobado:80, preguntas:entrenador },
+    { id:"encargado",  nombre:"Encargado",  minutos:15, aprobado:80, preguntas:encargado },
+    { id:"gerente",    nombre:"Gerente",    minutos:15, aprobado:80, preguntas:gerente }
+  ];
+}
+
+const MARCAS = [
+  { id:"sabores",  nombre:"Sabores Express", niveles: armarNiveles(PREGUNTAS_ENTRENADOR, PREGUNTAS_ENCARGADO, PREGUNTAS_GERENTE) },
+  { id:"extremas", nombre:"Extremas",        niveles: armarNiveles(EXTREMAS_ENTRENADOR, EXTREMAS_ENCARGADO, EXTREMAS_GERENTE) }
+];
+let marca = MARCAS.find((m) => m.id === new URLSearchParams(location.search).get("marca")) || MARCAS[0];
+let NIVELES = marca.niveles;
 
 /* ===========================================================
    ESTADO
@@ -263,7 +412,11 @@ let estado = "portada";       // portada | en_curso | cerrado
 let indice = 0;
 let salidas = 0;
 let ultimaSalida = 0;
-let restante = CONFIG.MINUTOS * 60;
+let nivel = null;             // nivel elegido
+let PREGUNTAS = [];
+let restante = 0;
+let aprobados = [];           // ids de niveles aprobados por el DNI
+let desaprobados = {};        // nivel -> fecha ISO del último intento no aprobado
 let cronometro = null;
 let inicio = null;
 let motivoCierre = null;
@@ -275,18 +428,201 @@ const $ = (id) => document.getElementById(id);
 /* ===========================================================
    PORTADA
    =========================================================== */
-$("reglaTiempo").textContent = CONFIG.MINUTOS + " minutos";
-$("reglaCant").textContent = PREGUNTAS.length;
+function mezclar(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Mezcla el orden de las preguntas y de las opciones, reubicando la clave correcta.
+function mezclarExamen(preguntas) {
+  return mezclar(preguntas).map((p) => {
+    if (p.tipo === "grilla") return p;
+    const orden = mezclar(p.opciones.map((_, i) => i));
+    return { ...p, opciones: orden.map((i) => p.opciones[i]), correcta: orden.indexOf(p.correcta) };
+  });
+}
+
+if (CONFIG.LOCALES.length) {
+  const sel = document.createElement("select");
+  sel.id = "f_local";
+  sel.innerHTML = '<option value="">Elegí tu local</option>' +
+    CONFIG.LOCALES.map((l) => "<option></option>").join("");
+  CONFIG.LOCALES.forEach((l, i) => { sel.options[i + 1].textContent = l; sel.options[i + 1].value = l; });
+  $("f_local").replaceWith(sel);
+  $("lista_locales").remove();
+}
+
+function pintarMarcas() {
+  $("marcas").innerHTML = "";
+  MARCAS.forEach((m) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", String(m === marca));
+    b.textContent = m.nombre;
+    b.addEventListener("click", () => elegirMarca(m));
+    $("marcas").appendChild(b);
+  });
+  $("tituloPortada").textContent = "Exámenes de ascenso — " + marca.nombre;
+  document.title = "Exámenes de ascenso — " + marca.nombre;
+}
+
+function elegirMarca(m) {
+  marca = m;
+  NIVELES = m.niveles;
+  nivel = null;
+  aprobados = [];
+  desaprobados = {};
+  $("bloqueNiveles").classList.add("oculto");
+  $("estadoDni").textContent = "";
+  pintarMarcas();
+  try { history.replaceState(null, "", "?marca=" + m.id); } catch (e) { /* sin historial */ }
+}
+
+function limpiarDni(v) { return String(v).replace(/\D/g, ""); }
+
+// Devuelve { aprobados: [niveles], desaprobados: { nivel: fecha ISO del último intento no aprobado } }.
+async function leerProgreso(dni) {
+  if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
+    const r = await rpc("estado_dni", { p_marca: marca.id, p_dni: dni });
+    if (!r.ok) throw new Error("Supabase " + r.status);
+    const d = (await r.json()) || {};
+    return { aprobados: d.aprobados || [], desaprobados: d.desaprobados || {} };
+  }
+  try {
+    return JSON.parse(localStorage.getItem("progreso_" + marca.id + "_" + dni)) || { aprobados: [], desaprobados: {} };
+  } catch (e) { return { aprobados: [], desaprobados: {} }; }
+}
+
+function rpc(nombre, datos) {
+  return fetch(CONFIG.SUPABASE_URL + "/rest/v1/rpc/" + nombre, {
+    method: "POST", keepalive: true,
+    headers: { "Content-Type": "application/json", apikey: CONFIG.SUPABASE_ANON_KEY,
+      Authorization: "Bearer " + CONFIG.SUPABASE_ANON_KEY },
+    body: JSON.stringify(datos)
+  });
+}
+
+function guardarLocal(d) {
+  try {
+    const prog = JSON.parse(localStorage.getItem("progreso_" + d.marca + "_" + d.dni)) || { aprobados: [], desaprobados: {} };
+    if (d.condicion === "Aprobado") { if (!prog.aprobados.includes(d.nivel)) prog.aprobados.push(d.nivel); }
+    else prog.desaprobados[d.nivel] = d.fin;
+    localStorage.setItem("progreso_" + d.marca + "_" + d.dni, JSON.stringify(prog));
+  } catch (e) { /* sin almacenamiento local */ }
+}
+
+// Momento desde el que se puede volver a rendir un nivel desaprobado (null = sin espera).
+function habilitaDesde(nivelId) {
+  const ultimo = desaprobados[nivelId];
+  if (!ultimo) return null;
+  const desde = new Date(new Date(ultimo).getTime() + CONFIG.ESPERA_HORAS * 3600 * 1000);
+  return desde > new Date() ? desde : null;
+}
+
+function fechaCorta(f) {
+  return f.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" }) + " " +
+    f.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) + " hs";
+}
+
+// Un nivel está disponible si todos los anteriores están aprobados, él no, y pasó la espera.
+function estadoNivel(i) {
+  if (aprobados.includes(NIVELES[i].id)) return "hecho";
+  if (!NIVELES[i].preguntas.length) return "pronto";
+  if (!NIVELES.slice(0, i).every((n) => aprobados.includes(n.id))) return "bloq";
+  return habilitaDesde(NIVELES[i].id) ? "espera" : "disponible";
+}
+
+function pintarNiveles() {
+  const cont = $("niveles");
+  cont.innerHTML = "";
+  NIVELES.forEach((n, i) => {
+    const est = estadoNivel(i);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "nivel" + (est === "bloq" || est === "espera" || est === "pronto" ? " bloq" : "") + (est === "hecho" ? " hecho" : "");
+    b.disabled = est !== "disponible";
+    b.innerHTML = '<span class="num">Nivel ' + (i + 1) + "</span><strong>" + n.nombre + "</strong>" +
+      (est === "hecho" ? '<span class="etq ok">Aprobado</span>'
+        : est === "disponible" ? '<span class="etq sd">Disponible</span>'
+        : est === "pronto" ? '<span class="etq sd">Próximamente</span>'
+        : est === "espera" ? '<span class="etq mal">En espera</span><span class="gris" style="font-size:.78rem">Desde ' + fechaCorta(habilitaDesde(n.id)) + "</span>"
+        : '<span class="etq mal">Bloqueado</span>');
+    if (est === "disponible") b.addEventListener("click", () => elegirNivel(i, b));
+    cont.appendChild(b);
+  });
+  const i = NIVELES.findIndex((_, k) => estadoNivel(k) === "disponible");
+  if (i >= 0) elegirNivel(i, cont.children[i]);
+  else {
+    $("bloqueDatos").classList.add("oculto");
+    const k = NIVELES.findIndex((_, j) => estadoNivel(j) === "espera");
+    const pronto = NIVELES.some((_, j) => estadoNivel(j) === "pronto");
+    $("estadoDni").textContent = pronto && k < 0
+      ? "Los exámenes de " + marca.nombre + " estarán disponibles próximamente."
+      : k >= 0
+      ? "Tenés que esperar " + CONFIG.ESPERA_HORAS + " hs para volver a rendir " + NIVELES[k].nombre +
+        ". Podés rendir desde el " + fechaCorta(habilitaDesde(NIVELES[k].id)) + "."
+      : "Aprobaste todos los niveles.";
+  }
+}
+
+function elegirNivel(i, boton) {
+  nivel = NIVELES[i];
+  [...$("niveles").children].forEach((el) => el.classList.remove("sel"));
+  boton.classList.add("sel");
+  $("reglaNivel").textContent = nivel.nombre;
+  $("reglaTiempo").textContent = nivel.minutos + " minutos";
+  $("reglaCant").textContent = nivel.preguntas.length;
+  $("reglaAprobado").textContent = nivel.aprobado + "%";
+  $("bloqueDatos").classList.remove("oculto");
+}
+
+pintarMarcas();
+
+$("f_dni").addEventListener("input", () => {
+  $("f_dni").value = limpiarDni($("f_dni").value).slice(0, 8);
+  $("bloqueNiveles").classList.add("oculto"); $("estadoDni").textContent = ""; });
+$("f_dni").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btnConsultar").click(); });
+
+$("btnConsultar").addEventListener("click", async () => {
+  const dni = limpiarDni($("f_dni").value);
+  if (dni.length < 7 || dni.length > 8) { $("estadoDni").textContent = "Ingresá un DNI válido (7 u 8 números)."; return; }
+  $("f_dni").value = dni;
+  $("btnConsultar").disabled = true;
+  $("estadoDni").textContent = "Consultando…";
+  try {
+    const prog = await leerProgreso(dni);
+    aprobados = prog.aprobados;
+    desaprobados = prog.desaprobados;
+    postulante.dni = dni;
+    $("estadoDni").textContent = aprobados.length
+      ? "Niveles aprobados: " + NIVELES.filter((n) => aprobados.includes(n.id)).map((n) => n.nombre).join(", ") + "."
+      : "Sin exámenes aprobados. Empezás por Entrenador.";
+    $("bloqueNiveles").classList.remove("oculto");
+    pintarNiveles();
+  } catch (e) {
+    $("estadoDni").textContent = "No se pudo consultar el progreso. Probá de nuevo.";
+  } finally {
+    $("btnConsultar").disabled = false;
+  }
+});
 
 $("btnComenzar").addEventListener("click", async () => {
   postulante.nombre = $("f_nombre").value.trim();
   postulante.correo = $("f_correo").value.trim();
   postulante.local  = $("f_local").value.trim();
-  postulante.puesto = $("f_puesto").value.trim();
-  if (!postulante.nombre || !postulante.local || !postulante.puesto) {
-    alert("Completá nombre, local y puesto para comenzar.");
+  if (!postulante.dni || !nivel) { alert("Consultá tu DNI y elegí un nivel."); return; }
+  if (!postulante.nombre || !postulante.local) {
+    alert("Completá nombre y local para comenzar.");
     return;
   }
+  postulante.puesto = nivel.nombre;
+  PREGUNTAS = mezclarExamen(nivel.preguntas);
+  restante = nivel.minutos * 60;
   if (CONFIG.PANTALLA_COMPLETA && document.documentElement.requestFullscreen) {
     try { await document.documentElement.requestFullscreen(); } catch (e) { /* el navegador puede negarlo */ }
   }
@@ -296,7 +632,7 @@ $("btnComenzar").addEventListener("click", async () => {
   $("examen").classList.remove("oculto");
   $("cabecera").classList.remove("oculto");
   $("pie").classList.remove("oculto");
-  $("quien").textContent = postulante.nombre + " · " + postulante.local;
+  $("quien").textContent = marca.nombre + " · " + postulante.nombre + " · Nivel " + nivel.nombre;
   armarRiel();
   arrancarReloj();
   pintar();
@@ -485,11 +821,14 @@ function armarPayload() {
   const aciertos = conClave.filter((d) => d.resultado === "correcta").length;
   const porcentaje = conClave.length ? Math.round((aciertos / conClave.length) * 100) : null;
   return {
-    examen: "Ascenso Sabores Express",
+    examen: "Ascenso " + marca.nombre,
+    marca: marca.id,
+    dni: postulante.dni,
+    nivel: nivel.id,
     postulante,
     inicio: inicio ? inicio.toISOString() : null,
     fin: new Date().toISOString(),
-    segundos_usados: CONFIG.MINUTOS * 60 - Math.max(0, restante),
+    segundos_usados: nivel.minutos * 60 - Math.max(0, restante),
     motivo_cierre: motivoCierre,
     salidas_detectadas: salidas,
     respondidas: Object.keys(respuestas).length,
@@ -498,14 +837,28 @@ function armarPayload() {
     evaluadas: conClave.length,
     sin_clave: detalle.length - conClave.length,
     porcentaje,
-    condicion: porcentaje === null ? "S/D" : (porcentaje >= CONFIG.APROBADO ? "Aprobado" : "Desaprobado"),
+    condicion: porcentaje === null ? "S/D" : (porcentaje >= nivel.aprobado ? "Aprobado" : "Desaprobado"),
     detalle
   };
 }
 
 function enviar(payload) {
-  if (!CONFIG.WEBHOOK_URL) return;
+  guardarLocal(payload);
+  // Historial local para admin.html mientras no esté conectado Supabase.
+  try {
+    const hist = JSON.parse(localStorage.getItem("resultados")) || [];
+    hist.push(payload);
+    localStorage.setItem("resultados", JSON.stringify(hist));
+  } catch (e) { /* sin almacenamiento local */ }
   const cuerpo = JSON.stringify(payload);
+  if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
+    try {
+      rpc("registrar_resultado", { p_marca: payload.marca, p_dni: payload.dni, p_nivel: payload.nivel, p_porcentaje: payload.porcentaje,
+        p_condicion: payload.condicion, p_nombre: payload.postulante.nombre, p_local: payload.postulante.local,
+        p_payload: payload }).catch(() => {});
+    } catch (e) { /* el resultado igual queda en pantalla para copiar */ }
+  }
+  if (!CONFIG.WEBHOOK_URL) return;
   try {
     if (navigator.sendBeacon) {
       navigator.sendBeacon(CONFIG.WEBHOOK_URL, new Blob([cuerpo], { type: "application/json" }));
@@ -515,13 +868,6 @@ function enviar(payload) {
   } catch (e) { /* el resultado igual queda en pantalla para copiar */ }
 }
 
-const TITULOS = {
-  entregado: "Examen entregado",
-  tiempo: "Se terminó el tiempo",
-  abandono: "Examen cerrado",
-  salida: "Examen cerrado por salir de la ventana"
-};
-
 function mostrarResultado(d) {
   $("examen").classList.add("oculto");
   $("pie").classList.add("oculto");
@@ -529,28 +875,30 @@ function mostrarResultado(d) {
   $("cabecera").classList.add("oculto");
   const base = String(motivoCierre).split(":")[0];
 
-  const filas = d.detalle.map((x) => {
-    const etq = x.resultado === "correcta" ? '<span class="etq ok">OK</span>'
-      : x.resultado === "incorrecta" ? '<span class="etq mal">Error</span>'
-      : '<span class="etq sd">S/D</span>';
-    const resp = document.createElement("span");
-    resp.textContent = x.respuesta || "Sin responder";
-    return '<div class="fila"><span>' + x.id + ". " + x.pregunta + "<br><span class='gris'>" + resp.innerHTML + "</span></span>" + etq + "</div>";
-  }).join("");
+  const siguiente = NIVELES[NIVELES.indexOf(nivel) + 1];
+  const aprobo = d.condicion === "Aprobado";
+  const desde = fechaCorta(new Date(new Date(d.fin).getTime() + CONFIG.ESPERA_HORAS * 3600 * 1000));
+  const titulo = aprobo ? "¡Felicitaciones, " + d.postulante.nombre.split(" ")[0] + "!" : "Esta vez no alcanzó";
+  const mensaje = aprobo
+    ? (siguiente
+        ? "Aprobaste el nivel " + nivel.nombre + " y ya podés avanzar al nivel " + siguiente.nombre + ". ¡Seguí así!"
+        : "Completaste todos los niveles de " + marca.nombre + ". ¡Excelente trabajo!")
+    : (base === "salida" || base === "abandono"
+        ? "El examen se cerró porque saliste de la ventana. "
+        : base === "tiempo" ? "Se terminó el tiempo. " : "") +
+      "No te desanimes: repasá el manual y volvé a intentarlo desde el " + desde + ".";
 
   const r = $("resultado");
   r.classList.remove("oculto");
   r.innerHTML =
-    "<h1>" + (TITULOS[base] || "Examen cerrado") + "</h1>" +
-    '<p class="gris">' + d.postulante.nombre + " · " + d.postulante.local + " · " + d.postulante.puesto + "</p>" +
-    '<div class="puntaje" style="margin-top:1.5rem">' + (d.porcentaje === null ? "S/D" : d.porcentaje + "%") + "</div>" +
-    '<p class="gris">' + d.aciertos + " de " + d.evaluadas + " preguntas evaluadas · " +
-      d.respondidas + " de " + d.total_preguntas + " respondidas" +
-      (d.sin_clave ? " · " + d.sin_clave + " sin clave cargada (S/D)" : "") + "</p>" +
-    '<p style="font-weight:600;margin-top:.5rem">Condición: ' + d.condicion + "</p>" +
-    '<div class="detalle">' + filas + "</div>" +
-    '<p class="gris" style="margin-top:1.5rem;font-size:.85rem">Resultado en JSON para cargar en la base:</p>' +
-    "<textarea readonly>" + JSON.stringify(d, null, 2) + "</textarea>";
+    '<p class="gris">' + marca.nombre + " · Nivel " + nivel.nombre + "</p>" +
+    '<div class="puntaje" style="margin:1rem 0 .5rem;color:' + (aprobo ? "var(--verde)" : "var(--alerta)") + '">' +
+      (d.porcentaje === null ? "S/D" : d.porcentaje + "%") + "</div>" +
+    '<span class="etq ' + (aprobo ? "ok" : "mal") + '" style="font-size:.9rem">' + d.condicion + "</span>" +
+    '<h1 style="margin-top:1.5rem" id="resTitulo"></h1>' +
+    '<p style="font-size:1.05rem" id="resMensaje"></p>';
+  $("resTitulo").textContent = titulo;
+  $("resMensaje").textContent = mensaje;
 }
 </script>
 </body>
