@@ -75,6 +75,7 @@ dialog textarea{width:100%;height:12rem;margin:.75rem 0;padding:.6rem;border:1px
   </div>
 
   <div class="filtros">
+    <select id="fMarca"><option value="">Todas las marcas</option><option value="sabores">Sabores Express</option><option value="extremas">Extremas</option></select>
     <select id="fNivel"><option value="">Todos los niveles</option></select>
     <select id="fLocal"><option value="">Todos los locales</option></select>
     <input id="fBuscar" placeholder="Buscar DNI o nombre">
@@ -128,6 +129,8 @@ const NIVELES = [
   { id:"gerente",    nombre:"Gerente" }
 ];
 const NOMBRE_NIVEL = Object.fromEntries(NIVELES.map((n) => [n.id, n.nombre]));
+const NOMBRE_MARCA = { sabores:"Sabores Express", extremas:"Extremas" };
+const marcaDe = (d) => d.marca || "sabores";
 const $ = (id) => document.getElementById(id);
 const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 const pct = (a, b) => (b ? Math.round((a / b) * 100) + "%" : "—");
@@ -156,8 +159,9 @@ function pintarLocales() {
 }
 
 function filtrados() {
-  const nivel = $("fNivel").value, local = $("fLocal").value, q = $("fBuscar").value.trim().toLowerCase();
+  const marca = $("fMarca").value, nivel = $("fNivel").value, local = $("fLocal").value, q = $("fBuscar").value.trim().toLowerCase();
   return datos.filter((d) =>
+    (!marca || marcaDe(d) === marca) &&
     (!nivel || d.nivel === nivel) &&
     (!local || d.postulante?.local === local) &&
     (!q || String(d.dni).includes(q) || String(d.postulante?.nombre || "").toLowerCase().includes(q)));
@@ -192,7 +196,7 @@ function pintar() {
   const porPregunta = {};
   f.forEach((d) => (d.detalle || []).forEach((p) => {
     if (p.resultado === "S/D") return;
-    const k = d.nivel + ":" + p.id;
+    const k = marcaDe(d) + ":" + d.nivel + ":" + p.id;
     const e = porPregunta[k] || (porPregunta[k] = { texto: p.pregunta, nivel: d.nivel, total: 0, errores: 0 });
     e.total++;
     if (p.resultado !== "correcta") e.errores++;
@@ -209,17 +213,18 @@ function pintar() {
   // Progreso por DNI: último nivel aprobado y último intento
   const personas = {};
   [...f].sort((a, b) => new Date(a.fin) - new Date(b.fin)).forEach((d) => {
-    const p = personas[d.dni] || (personas[d.dni] = { dni: d.dni, nombre: d.postulante?.nombre, local: d.postulante?.local, aprobados: new Set(), intentos: 0 });
+    const clave = marcaDe(d) + "|" + d.dni;
+    const p = personas[clave] || (personas[clave] = { marca: marcaDe(d), dni: d.dni, nombre: d.postulante?.nombre, local: d.postulante?.local, aprobados: new Set(), intentos: 0 });
     p.intentos++;
     p.ultimo = d;
     if (d.condicion === "Aprobado") p.aprobados.add(d.nivel);
   });
   const filasP = Object.values(personas).sort((a, b) => new Date(b.ultimo.fin) - new Date(a.ultimo.fin));
   $("tPersonas").innerHTML = filasP.length
-    ? '<thead><tr><th>DNI</th><th>Nombre</th><th>Local</th><th>Nivel alcanzado</th><th class="num">Intentos</th><th>Último intento</th><th>Resultado</th></tr></thead><tbody>' +
+    ? '<thead><tr><th>Marca</th><th>DNI</th><th>Nombre</th><th>Local</th><th>Nivel alcanzado</th><th class="num">Intentos</th><th>Último intento</th><th>Resultado</th></tr></thead><tbody>' +
       filasP.map((p) => {
         const alcanzado = [...NIVELES].reverse().find((n) => p.aprobados.has(n.id));
-        return "<tr><td>" + esc(p.dni) + "</td><td>" + esc(p.nombre) + "</td><td>" + esc(p.local) + "</td><td>" +
+        return "<tr><td>" + esc(NOMBRE_MARCA[p.marca] || p.marca) + "</td><td>" + esc(p.dni) + "</td><td>" + esc(p.nombre) + "</td><td>" + esc(p.local) + "</td><td>" +
           (alcanzado ? alcanzado.nombre : '<span class="gris">Ninguno</span>') + '</td><td class="num">' + p.intentos + "</td><td>" +
           esc(NOMBRE_NIVEL[p.ultimo.nivel]) + " · " + fecha(p.ultimo.fin) + "</td><td>" + etiqueta(p.ultimo) + "</td></tr>";
       }).join("") + "</tbody>"
@@ -228,8 +233,8 @@ function pintar() {
   // Todos los intentos
   const filasI = [...f].sort((a, b) => new Date(b.fin) - new Date(a.fin));
   $("tIntentos").innerHTML = filasI.length
-    ? '<thead><tr><th>Fecha</th><th>DNI</th><th>Nombre</th><th>Local</th><th>Nivel</th><th class="num">%</th><th>Resultado</th><th>Cierre</th><th class="num">Tiempo</th></tr></thead><tbody>' +
-      filasI.map((d) => "<tr><td>" + fecha(d.fin) + "</td><td>" + esc(d.dni) + "</td><td>" + esc(d.postulante?.nombre) + "</td><td>" +
+    ? '<thead><tr><th>Fecha</th><th>Marca</th><th>DNI</th><th>Nombre</th><th>Local</th><th>Nivel</th><th class="num">%</th><th>Resultado</th><th>Cierre</th><th class="num">Tiempo</th></tr></thead><tbody>' +
+      filasI.map((d) => "<tr><td>" + fecha(d.fin) + "</td><td>" + esc(NOMBRE_MARCA[marcaDe(d)] || marcaDe(d)) + "</td><td>" + esc(d.dni) + "</td><td>" + esc(d.postulante?.nombre) + "</td><td>" +
         esc(d.postulante?.local) + "</td><td>" + esc(NOMBRE_NIVEL[d.nivel] || d.nivel) + '</td><td class="num">' + (d.porcentaje ?? "—") +
         "</td><td>" + etiqueta(d) + "</td><td>" + motivo(d.motivo_cierre) + '</td><td class="num">' + minutos(d.segundos_usados) + "</td></tr>").join("") + "</tbody>"
     : '<tbody><tr><td class="vacio">Sin datos.</td></tr></tbody>';
@@ -250,7 +255,7 @@ function minutos(s) {
 /* ===========================================================
    INTERACCIÓN
    =========================================================== */
-["fNivel", "fLocal"].forEach((id) => $(id).addEventListener("change", pintar));
+["fMarca", "fNivel", "fLocal"].forEach((id) => $(id).addEventListener("change", pintar));
 $("fBuscar").addEventListener("input", pintar);
 
 $("barras").addEventListener("mousemove", (e) => {
@@ -271,7 +276,7 @@ $("btnConfirmar").addEventListener("click", () => {
   try { nuevos = JSON.parse($("txtImport").value); } catch (e) { alert("El JSON no es válido."); return; }
   nuevos = (Array.isArray(nuevos) ? nuevos : [nuevos]).filter((d) => d && d.dni && d.nivel);
   if (!nuevos.length) { alert("No se encontraron resultados con DNI y nivel."); return; }
-  const clave = (d) => d.dni + "|" + d.nivel + "|" + d.fin;
+  const clave = (d) => marcaDe(d) + "|" + d.dni + "|" + d.nivel + "|" + d.fin;
   const existentes = new Set(datos.map(clave));
   datos = datos.concat(nuevos.filter((d) => !existentes.has(clave(d))));
   guardarResultados(datos);
@@ -281,9 +286,9 @@ $("btnConfirmar").addEventListener("click", () => {
 });
 
 $("btnCsv").addEventListener("click", () => {
-  const cols = ["fecha", "dni", "nombre", "correo", "local", "nivel", "porcentaje", "condicion", "motivo_cierre", "segundos_usados", "respondidas", "total_preguntas"];
+  const cols = ["fecha", "marca", "dni", "nombre", "correo", "local", "nivel", "porcentaje", "condicion", "motivo_cierre", "segundos_usados", "respondidas", "total_preguntas"];
   const val = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
-  const filas = filtrados().map((d) => [d.fin, d.dni, d.postulante?.nombre, d.postulante?.correo, d.postulante?.local,
+  const filas = filtrados().map((d) => [d.fin, NOMBRE_MARCA[marcaDe(d)] || marcaDe(d), d.dni, d.postulante?.nombre, d.postulante?.correo, d.postulante?.local,
     NOMBRE_NIVEL[d.nivel] || d.nivel, d.porcentaje, d.condicion, d.motivo_cierre, d.segundos_usados, d.respondidas, d.total_preguntas].map(val).join(","));
   const blob = new Blob(["﻿" + [cols.join(","), ...filas].join("\n")], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");

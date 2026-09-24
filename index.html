@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Examen de ascenso — Sabores Express</title>
+<title>Exámenes de ascenso</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -127,6 +127,11 @@ footer{
 textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid var(--linea);border-radius:var(--radio);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;background:var(--papel)}
 .oculto{display:none !important}
 
+/* Marcas */
+.marcas{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1.25rem}
+.marcas button{padding:.55rem 1.1rem;background:var(--papel);border:1px solid var(--linea);border-radius:999px;cursor:pointer;font-weight:600}
+.marcas button[aria-checked="true"]{background:var(--tinta);border-color:var(--tinta);color:#fff}
+
 /* Niveles */
 .dni-fila{display:flex;gap:.6rem;max-width:30rem;align-items:flex-end}
 .dni-fila .campo{flex:1;margin-bottom:0}
@@ -149,7 +154,7 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
 
 <header id="cabecera" class="oculto">
   <div class="barra">
-    <div class="marca">Examen de ascenso<span id="quien">Sabores Express</span></div>
+    <div class="marca">Examen de ascenso<span id="quien"></span></div>
     <div class="reloj" id="reloj">00:00</div>
   </div>
   <div class="riel" id="riel"></div>
@@ -158,8 +163,10 @@ textarea{width:100%;height:9rem;margin-top:1rem;padding:.8rem;border:1px solid v
 <main>
   <!-- PORTADA -->
   <section id="portada">
-    <h1>Exámenes de ascenso — Sabores Express</h1>
+    <h1 id="tituloPortada">Exámenes de ascenso</h1>
     <p class="gris">Tres niveles: Entrenador, Encargado y Gerente. Cada nivel se habilita al aprobar el anterior.</p>
+
+    <div class="marcas" id="marcas" role="radiogroup" aria-label="Marca"></div>
 
     <div class="dni-fila" style="margin-top:1.5rem">
       <div class="campo"><label for="f_dni">DNI (sin puntos)</label><input id="f_dni" inputmode="numeric" maxlength="8" autocomplete="off"></div>
@@ -376,12 +383,27 @@ const PREGUNTAS_GERENTE = [
     opciones:["REBA, fumigación, análisis de agua, habilitación y formulario 960 ARCA","Solo la habilitación","Ninguno, se muestran si los piden","El plan de carrera"], correcta:0 }
 ];
 
+// Extremas: mismos niveles y criterios que Sabores. Bancos pendientes de cargar desde su manual.
+const EXTREMAS_ENTRENADOR = [];
+const EXTREMAS_ENCARGADO = [];
+const EXTREMAS_GERENTE = [];
+
+// Mismo criterio para todas las marcas: 15 minutos y 80% para aprobar.
 // Orden = orden de habilitación. Cada nivel se habilita al aprobar el anterior.
-const NIVELES = [
-  { id:"entrenador", nombre:"Entrenador", minutos:15, aprobado:80, preguntas:PREGUNTAS_ENTRENADOR },
-  { id:"encargado",  nombre:"Encargado",  minutos:15, aprobado:80, preguntas:PREGUNTAS_ENCARGADO },
-  { id:"gerente",    nombre:"Gerente",    minutos:15, aprobado:80, preguntas:PREGUNTAS_GERENTE }
+function armarNiveles(entrenador, encargado, gerente) {
+  return [
+    { id:"entrenador", nombre:"Entrenador", minutos:15, aprobado:80, preguntas:entrenador },
+    { id:"encargado",  nombre:"Encargado",  minutos:15, aprobado:80, preguntas:encargado },
+    { id:"gerente",    nombre:"Gerente",    minutos:15, aprobado:80, preguntas:gerente }
+  ];
+}
+
+const MARCAS = [
+  { id:"sabores",  nombre:"Sabores Express", niveles: armarNiveles(PREGUNTAS_ENTRENADOR, PREGUNTAS_ENCARGADO, PREGUNTAS_GERENTE) },
+  { id:"extremas", nombre:"Extremas",        niveles: armarNiveles(EXTREMAS_ENTRENADOR, EXTREMAS_ENCARGADO, EXTREMAS_GERENTE) }
 ];
+let marca = MARCAS.find((m) => m.id === new URLSearchParams(location.search).get("marca")) || MARCAS[0];
+let NIVELES = marca.niveles;
 
 /* ===========================================================
    ESTADO
@@ -435,18 +457,45 @@ if (CONFIG.LOCALES.length) {
   $("lista_locales").remove();
 }
 
+function pintarMarcas() {
+  $("marcas").innerHTML = "";
+  MARCAS.forEach((m) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("role", "radio");
+    b.setAttribute("aria-checked", String(m === marca));
+    b.textContent = m.nombre;
+    b.addEventListener("click", () => elegirMarca(m));
+    $("marcas").appendChild(b);
+  });
+  $("tituloPortada").textContent = "Exámenes de ascenso — " + marca.nombre;
+  document.title = "Exámenes de ascenso — " + marca.nombre;
+}
+
+function elegirMarca(m) {
+  marca = m;
+  NIVELES = m.niveles;
+  nivel = null;
+  aprobados = [];
+  desaprobados = {};
+  $("bloqueNiveles").classList.add("oculto");
+  $("estadoDni").textContent = "";
+  pintarMarcas();
+  try { history.replaceState(null, "", "?marca=" + m.id); } catch (e) { /* sin historial */ }
+}
+
 function limpiarDni(v) { return String(v).replace(/\D/g, ""); }
 
 // Devuelve { aprobados: [niveles], desaprobados: { nivel: fecha ISO del último intento no aprobado } }.
 async function leerProgreso(dni) {
   if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
-    const r = await rpc("estado_dni", { p_dni: dni });
+    const r = await rpc("estado_dni", { p_marca: marca.id, p_dni: dni });
     if (!r.ok) throw new Error("Supabase " + r.status);
     const d = (await r.json()) || {};
     return { aprobados: d.aprobados || [], desaprobados: d.desaprobados || {} };
   }
   try {
-    return JSON.parse(localStorage.getItem("progreso_" + dni)) || { aprobados: [], desaprobados: {} };
+    return JSON.parse(localStorage.getItem("progreso_" + marca.id + "_" + dni)) || { aprobados: [], desaprobados: {} };
   } catch (e) { return { aprobados: [], desaprobados: {} }; }
 }
 
@@ -461,10 +510,10 @@ function rpc(nombre, datos) {
 
 function guardarLocal(d) {
   try {
-    const prog = JSON.parse(localStorage.getItem("progreso_" + d.dni)) || { aprobados: [], desaprobados: {} };
+    const prog = JSON.parse(localStorage.getItem("progreso_" + d.marca + "_" + d.dni)) || { aprobados: [], desaprobados: {} };
     if (d.condicion === "Aprobado") { if (!prog.aprobados.includes(d.nivel)) prog.aprobados.push(d.nivel); }
     else prog.desaprobados[d.nivel] = d.fin;
-    localStorage.setItem("progreso_" + d.dni, JSON.stringify(prog));
+    localStorage.setItem("progreso_" + d.marca + "_" + d.dni, JSON.stringify(prog));
   } catch (e) { /* sin almacenamiento local */ }
 }
 
@@ -484,6 +533,7 @@ function fechaCorta(f) {
 // Un nivel está disponible si todos los anteriores están aprobados, él no, y pasó la espera.
 function estadoNivel(i) {
   if (aprobados.includes(NIVELES[i].id)) return "hecho";
+  if (!NIVELES[i].preguntas.length) return "pronto";
   if (!NIVELES.slice(0, i).every((n) => aprobados.includes(n.id))) return "bloq";
   return habilitaDesde(NIVELES[i].id) ? "espera" : "disponible";
 }
@@ -495,11 +545,12 @@ function pintarNiveles() {
     const est = estadoNivel(i);
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "nivel" + (est === "bloq" || est === "espera" ? " bloq" : "") + (est === "hecho" ? " hecho" : "");
+    b.className = "nivel" + (est === "bloq" || est === "espera" || est === "pronto" ? " bloq" : "") + (est === "hecho" ? " hecho" : "");
     b.disabled = est !== "disponible";
     b.innerHTML = '<span class="num">Nivel ' + (i + 1) + "</span><strong>" + n.nombre + "</strong>" +
       (est === "hecho" ? '<span class="etq ok">Aprobado</span>'
         : est === "disponible" ? '<span class="etq sd">Disponible</span>'
+        : est === "pronto" ? '<span class="etq sd">Próximamente</span>'
         : est === "espera" ? '<span class="etq mal">En espera</span><span class="gris" style="font-size:.78rem">Desde ' + fechaCorta(habilitaDesde(n.id)) + "</span>"
         : '<span class="etq mal">Bloqueado</span>');
     if (est === "disponible") b.addEventListener("click", () => elegirNivel(i, b));
@@ -510,7 +561,10 @@ function pintarNiveles() {
   else {
     $("bloqueDatos").classList.add("oculto");
     const k = NIVELES.findIndex((_, j) => estadoNivel(j) === "espera");
-    $("estadoDni").textContent = k >= 0
+    const pronto = NIVELES.some((_, j) => estadoNivel(j) === "pronto");
+    $("estadoDni").textContent = pronto && k < 0
+      ? "Los exámenes de " + marca.nombre + " estarán disponibles próximamente."
+      : k >= 0
       ? "Tenés que esperar " + CONFIG.ESPERA_HORAS + " hs para volver a rendir " + NIVELES[k].nombre +
         ". Podés rendir desde el " + fechaCorta(habilitaDesde(NIVELES[k].id)) + "."
       : "Aprobaste todos los niveles.";
@@ -527,6 +581,8 @@ function elegirNivel(i, boton) {
   $("reglaAprobado").textContent = nivel.aprobado + "%";
   $("bloqueDatos").classList.remove("oculto");
 }
+
+pintarMarcas();
 
 $("f_dni").addEventListener("input", () => {
   $("f_dni").value = limpiarDni($("f_dni").value).slice(0, 8);
@@ -577,7 +633,7 @@ $("btnComenzar").addEventListener("click", async () => {
   $("examen").classList.remove("oculto");
   $("cabecera").classList.remove("oculto");
   $("pie").classList.remove("oculto");
-  $("quien").textContent = postulante.nombre + " · Nivel " + nivel.nombre;
+  $("quien").textContent = marca.nombre + " · " + postulante.nombre + " · Nivel " + nivel.nombre;
   armarRiel();
   arrancarReloj();
   pintar();
@@ -766,7 +822,8 @@ function armarPayload() {
   const aciertos = conClave.filter((d) => d.resultado === "correcta").length;
   const porcentaje = conClave.length ? Math.round((aciertos / conClave.length) * 100) : null;
   return {
-    examen: "Ascenso Sabores Express",
+    examen: "Ascenso " + marca.nombre,
+    marca: marca.id,
     dni: postulante.dni,
     nivel: nivel.id,
     postulante,
@@ -797,7 +854,7 @@ function enviar(payload) {
   const cuerpo = JSON.stringify(payload);
   if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
     try {
-      rpc("registrar_resultado", { p_dni: payload.dni, p_nivel: payload.nivel, p_porcentaje: payload.porcentaje,
+      rpc("registrar_resultado", { p_marca: payload.marca, p_dni: payload.dni, p_nivel: payload.nivel, p_porcentaje: payload.porcentaje,
         p_condicion: payload.condicion, p_nombre: payload.postulante.nombre, p_local: payload.postulante.local,
         p_payload: payload }).catch(() => {});
     } catch (e) { /* el resultado igual queda en pantalla para copiar */ }
@@ -839,7 +896,7 @@ function mostrarResultado(d) {
   r.classList.remove("oculto");
   r.innerHTML =
     "<h1>" + (TITULOS[base] || "Examen cerrado") + "</h1>" +
-    '<p class="gris">DNI ' + d.dni + " · " + d.postulante.nombre + " · " + d.postulante.local + " · Nivel " + d.postulante.puesto + "</p>" +
+    '<p class="gris">' + marca.nombre + " · DNI " + d.dni + " · " + d.postulante.nombre + " · " + d.postulante.local + " · Nivel " + d.postulante.puesto + "</p>" +
     '<div class="puntaje" style="margin-top:1.5rem">' + (d.porcentaje === null ? "S/D" : d.porcentaje + "%") + "</div>" +
     '<p class="gris">' + d.aciertos + " correctas de " + d.evaluadas + " · " +
       d.respondidas + " de " + d.total_preguntas + " respondidas" +
