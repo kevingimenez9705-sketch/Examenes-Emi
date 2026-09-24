@@ -20,7 +20,16 @@ language sql stable security definer set search_path = public as $$
            'respondidas', payload->'respondidas',
            'total_preguntas', payload->'total_preguntas',
            'aciertos', payload->'aciertos',
-           'detalle', payload->'detalle'),
+           'detalle', payload->'detalle',
+           -- Campos de resultados anteriores a la corrección en servidor.
+           'examen', payload->'examen',
+           'marca', payload->'marca',
+           'nivel', payload->'nivel',
+           'salidas_detectadas', payload->'salidas_detectadas',
+           'evaluadas', payload->'evaluadas',
+           'sin_clave', payload->'sin_clave',
+           'porcentaje', payload->'porcentaje',
+           'condicion', payload->'condicion'),
          creado
   from examen_resultados order by creado desc;
 $$;
