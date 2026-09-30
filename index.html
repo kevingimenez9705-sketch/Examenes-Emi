@@ -787,6 +787,40 @@ function mostrarResultado(d) {
     '<p style="font-size:1.05rem" id="resMensaje"></p>';
   $("resTitulo").textContent = titulo;
   $("resMensaje").textContent = mensaje;
+  mostrarIncorrectas(r, d);
+}
+
+// Lista de preguntas mal respondidas o sin responder (sin la respuesta correcta).
+function mostrarIncorrectas(cont, d) {
+  const lista = Array.isArray(d.incorrectas) ? d.incorrectas : [];
+  if (!lista.length) return;
+  const caja = document.createElement("div");
+  caja.className = "detalle";
+  caja.style.textAlign = "left";
+  const cab = document.createElement("div");
+  cab.className = "fila";
+  cab.innerHTML = "<strong></strong>";
+  cab.firstChild.textContent = "Preguntas a repasar (" + lista.length + (d.total ? " de " + d.total : "") + ")";
+  caja.appendChild(cab);
+  lista.forEach((it) => {
+    const fila = document.createElement("div");
+    fila.className = "fila";
+    const txt = document.createElement("div");
+    const preg = document.createElement("div");
+    preg.textContent = it.pregunta;
+    const resp = document.createElement("div");
+    resp.className = "gris";
+    resp.style.fontSize = ".82rem";
+    resp.style.marginTop = ".25rem";
+    resp.textContent = "Tu respuesta: " + (it.respuesta || "sin responder");
+    txt.append(preg, resp);
+    const etq = document.createElement("span");
+    etq.className = "etq " + (it.respuesta ? "mal" : "sd");
+    etq.textContent = it.respuesta ? "Incorrecta" : "Sin responder";
+    fila.append(txt, etq);
+    caja.appendChild(fila);
+  });
+  cont.appendChild(caja);
 }
 </script>
 </body>
