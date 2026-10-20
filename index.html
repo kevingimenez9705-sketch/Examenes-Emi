@@ -208,11 +208,9 @@ thead th{background:#F7FAFF;font-weight:700;color:var(--gris)}
 .etq.sd{background:#EEF1F6;color:var(--gris)}
 .tarjeta-aviso{border-radius:18px;border-top:none;box-shadow:inset 0 4px 0 var(--alerta),var(--sombra)}
 
-/* Resultado: tarjeta blanca (sin la nota: el postulante solo ve si aprobó) */
+/* Resultado: tarjeta blanca (sin nota ni condición: el postulante solo ve que finalizó) */
 #resultado.tarjeta-res{background:var(--papel);border:1px solid var(--linea);border-radius:20px;box-shadow:var(--sombra);
   padding:2rem 2rem 2.25rem;max-width:40rem}
-#resultado.tarjeta-res.aprobo{background:linear-gradient(160deg,#EAF1FF,#FFFFFF 60%)}
-#resultado.tarjeta-res .etq.ok::before{content:"✓ "}
 @media(max-width:560px){#resultado.tarjeta-res{padding:1.5rem}}
 </style>
 </head>
@@ -731,9 +729,9 @@ function finalizar(motivo) {
   // El servidor corrige y guarda. keepalive permite que se envíe aunque se cierre la página.
   rpc("entregar_examen", { p_token: token, p_respuestas: respuestas, p_motivo: motivo })
     .then((r) => r.json().then((d) => { if (!r.ok) throw new Error(d.message || r.status); return d; }))
-    .then((resultado) => {
-      avisarWebhook(resultado);
-      mostrarResultado(resultado);
+    .then(() => {
+      avisarWebhook();
+      mostrarResultado();
     })
     .catch(() => mostrarError());
 }
@@ -753,11 +751,11 @@ function mostrarError() {
     '<p class="gris">Revisá tu conexión y avisale a tu encargado. No vuelvas a rendir hasta que lo confirme Capacitación.</p>';
 }
 
-function avisarWebhook(resultado) {
+function avisarWebhook() {
   if (!CONFIG.WEBHOOK_URL) return;
   const cuerpo = JSON.stringify({
     examen: "Ascenso " + marca.nombre, marca: marca.id, dni: postulante.dni, nivel: nivel.id, postulante,
-    motivo_cierre: motivoCierre, condicion: resultado.condicion, fin: new Date().toISOString()
+    motivo_cierre: motivoCierre, fin: new Date().toISOString()
   });
   try {
     if (navigator.sendBeacon) navigator.sendBeacon(CONFIG.WEBHOOK_URL, new Blob([cuerpo], { type: "application/json" }));
@@ -765,35 +763,27 @@ function avisarWebhook(resultado) {
   } catch (e) { /* opcional */ }
 }
 
-function mostrarResultado(d) {
+// El postulante no ve la nota ni si aprobó: solo que el examen terminó.
+function mostrarResultado() {
   $("examen").classList.add("oculto");
   $("pie").classList.add("oculto");
   $("aviso").classList.remove("ver");
   $("cabecera").classList.add("oculto");
   const base = String(motivoCierre).split(":")[0];
 
-  const siguiente = NIVELES[NIVELES.indexOf(nivel) + 1];
-  const aprobo = d.condicion === "Aprobado";
-  const titulo = aprobo ? "¡Felicitaciones, " + postulante.nombre + "!" : "Esta vez no alcanzó";
-  const mensaje = aprobo
-    ? (siguiente
-        ? "Aprobaste el nivel " + nivel.nombre + " y ya podés avanzar al nivel " + siguiente.nombre + ". ¡Seguí así!"
-        : "Completaste todos los niveles de " + marca.nombre + ". ¡Excelente trabajo!")
-    : (base === "salida" || base === "abandono"
-        ? "El examen se cerró porque saliste de la ventana. "
-        : base === "tiempo" ? "Se terminó el tiempo. " : "") +
-      "No te desanimes: repasá el manual y volvé a intentarlo.";
+  const mensaje = "Gracias, " + postulante.nombre + ". " +
+    (base === "salida" || base === "abandono"
+      ? "El examen se cerró porque saliste de la ventana. "
+      : base === "tiempo" ? "Se terminó el tiempo. " : "") +
+    "Tus respuestas quedaron registradas. Ya podés cerrar esta ventana.";
 
   const r = $("resultado");
   r.classList.remove("oculto");
   r.classList.add("tarjeta-res");
-  r.classList.toggle("aprobo", aprobo);
   r.innerHTML =
     '<p class="gris">' + marca.nombre + " · Nivel " + nivel.nombre + "</p>" +
-    '<span class="etq ' + (aprobo ? "ok" : "mal") + '" style="font-size:1.1rem;display:inline-block;margin-top:1rem">' + d.condicion + "</span>" +
-    '<h1 style="margin-top:1.5rem" id="resTitulo"></h1>' +
+    '<h1 style="margin-top:1rem">Examen finalizado</h1>' +
     '<p style="font-size:1.05rem" id="resMensaje"></p>';
-  $("resTitulo").textContent = titulo;
   $("resMensaje").textContent = mensaje;
 }
 </script>

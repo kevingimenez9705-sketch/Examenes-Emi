@@ -8,8 +8,8 @@
 --    A mano, en Supabase > SQL Editor:
 --      select public.habilitar_personas('TU-CLAVE', 'sabores',
 --        '[{"dni":"30111222","nivel":"gerente","nombre":"Ana","apellido":"Pérez","motivo":"Rindió en papel"}]');
---  · entregar_examen ya no devuelve el porcentaje: el postulante solo ve si
---    aprobó o no. La nota sigue guardada y visible en el Campus.
+--  · entregar_examen ya no devuelve la nota ni la condición: el postulante solo
+--    ve que finalizó el examen. El resultado sigue guardado y visible en el Campus.
 -- Se puede volver a correr sin romper nada.
 -- (Sin signos pesos ni barras invertidas dentro de textos: el SQL Editor de Supabase los interpreta mal.)
 -- ============================================================
@@ -166,7 +166,7 @@ begin
 end;
 $fn$;
 
--- entregar_examen: igual que antes, pero al postulante solo le devuelve la condición (sin la nota).
+-- entregar_examen: igual que antes, pero al postulante no le devuelve la nota ni la condición.
 create or replace function public.entregar_examen(p_token uuid, p_respuestas jsonb, p_motivo text)
 returns json language plpgsql security definer set search_path = public as $fn$
 declare
@@ -208,7 +208,7 @@ begin
     'respondidas', respondidas, 'total_preguntas', total, 'aciertos', ok,
     'correo', t.correo, 'detalle', detalle));
 
-  return json_build_object('condicion', cond);
+  return json_build_object('entregado', true);
 end;
 $fn$;
 
