@@ -116,7 +116,6 @@ footer{
 .tarjeta-aviso{background:var(--papel);border-radius:var(--radio);padding:1.75rem;max-width:26rem;border-top:4px solid var(--alerta)}
 
 /* Resultado */
-.puntaje{font-size:4rem;font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
 .detalle{background:var(--papel);border:1px solid var(--linea);border-radius:var(--radio);margin-top:1.5rem}
 .detalle .fila{padding:.85rem 1.1rem;border-bottom:1px solid var(--linea);display:flex;justify-content:space-between;gap:1rem;font-size:.9rem}
 .detalle .fila:last-child{border-bottom:none}
@@ -209,15 +208,10 @@ thead th{background:#F7FAFF;font-weight:700;color:var(--gris)}
 .etq.sd{background:#EEF1F6;color:var(--gris)}
 .tarjeta-aviso{border-radius:18px;border-top:none;box-shadow:inset 0 4px 0 var(--alerta),var(--sombra)}
 
-/* Resultado: tarjeta blanca; % azul si aprobó, rojo si no */
+/* Resultado: tarjeta blanca (sin nota ni condición: el postulante solo ve que finalizó) */
 #resultado.tarjeta-res{background:var(--papel);border:1px solid var(--linea);border-radius:20px;box-shadow:var(--sombra);
   padding:2rem 2rem 2.25rem;max-width:40rem}
-#resultado.tarjeta-res .puntaje{font-weight:800;font-size:4.5rem}
-#resultado.tarjeta-res .puntaje.ok{color:var(--verde)}
-#resultado.tarjeta-res .puntaje.mal{color:var(--alerta)}
-#resultado.tarjeta-res.aprobo{background:linear-gradient(160deg,#EAF1FF,#FFFFFF 60%)}
-#resultado.tarjeta-res .etq.ok::before{content:"✓ "}
-@media(max-width:560px){#resultado.tarjeta-res{padding:1.5rem}#resultado.tarjeta-res .puntaje{font-size:3.5rem}}
+@media(max-width:560px){#resultado.tarjeta-res{padding:1.5rem}}
 </style>
 </head>
 <body>
@@ -234,7 +228,7 @@ thead th{background:#F7FAFF;font-weight:700;color:var(--gris)}
   <!-- PORTADA -->
   <section id="portada">
     <h1 id="tituloPortada">Exámenes de ascenso</h1>
-    <p class="gris">Tres niveles: Entrenador, Encargado y Gerente. Cada nivel se habilita al aprobar el anterior.</p>
+    <p class="gris">Tres niveles: Entrenador, Encargado y Gerente. Cada nivel se habilita al aprobar el anterior (o si Capacitación te lo habilita).</p>
 
     <div class="marcas" id="marcas" role="radiogroup" aria-label="Marca"></div>
 
@@ -346,6 +340,7 @@ let nivel = null;             // nivel elegido
 let PREGUNTAS = [];
 let restante = 0;
 let aprobados = [];           // ids de niveles aprobados por el DNI
+let habilitados = [];         // ids de niveles habilitados a mano por Capacitación
 let desaprobados = {};        // nivel -> fecha ISO del último intento no aprobado
 let cronometro = null;
 let inicio = null;
@@ -405,6 +400,7 @@ function elegirMarca(m) {
   NIVELES = m.niveles;
   nivel = null;
   aprobados = [];
+  habilitados = [];
   desaprobados = {};
   $("bloqueNiveles").classList.add("oculto");
   $("estadoDni").textContent = "";
@@ -414,12 +410,12 @@ function elegirMarca(m) {
 
 function limpiarDni(v) { return String(v).replace(/\D/g, ""); }
 
-// Devuelve { aprobados: [niveles], desaprobados: { nivel: fecha ISO del último intento no aprobado } }.
+// Devuelve { aprobados: [niveles], habilitados: [niveles], desaprobados: { nivel: fecha ISO del último intento no aprobado } }.
 async function leerProgreso(dni) {
   const r = await rpc("estado_dni", { p_marca: marca.id, p_dni: dni });
   if (!r.ok) throw new Error("Supabase " + r.status);
   const d = (await r.json()) || {};
-  return { aprobados: d.aprobados || [], desaprobados: d.desaprobados || {} };
+  return { aprobados: d.aprobados || [], habilitados: d.habilitados || [], desaprobados: d.desaprobados || {} };
 }
 
 function rpc(nombre, datos) {
@@ -439,10 +435,17 @@ function habilitaDesde(nivelId) {
   return desde > new Date() ? desde : null;
 }
 
-// Un nivel está disponible si todos los anteriores están aprobados, él no, y pasó la espera.
+// Índice del nivel más alto que habilitó Capacitación (0 = ninguno): los anteriores se dan por cumplidos.
+function nivelHabilitado() {
+  return Math.max(0, ...habilitados.map((id) => NIVELES.findIndex((n) => n.id === id)));
+}
+
+// Un nivel está disponible si todos los anteriores están aprobados (o eximidos), él no, y pasó la espera.
 function estadoNivel(i) {
+  const tope = nivelHabilitado();
   if (aprobados.includes(NIVELES[i].id)) return "hecho";
-  if (!NIVELES.slice(0, i).every((n) => aprobados.includes(n.id))) return "bloq";
+  if (i < tope) return "eximido";
+  if (!NIVELES.slice(tope, i).every((n) => aprobados.includes(n.id))) return "bloq";
   return habilitaDesde(NIVELES[i].id) ? "espera" : "disponible";
 }
 
@@ -453,10 +456,11 @@ function pintarNiveles() {
     const est = estadoNivel(i);
     const b = document.createElement("button");
     b.type = "button";
-    b.className = "nivel" + (est === "bloq" || est === "espera" ? " bloq" : "") + (est === "hecho" ? " hecho" : "");
+    b.className = "nivel" + (est === "bloq" || est === "espera" ? " bloq" : "") + (est === "hecho" || est === "eximido" ? " hecho" : "");
     b.disabled = est !== "disponible";
     b.innerHTML = '<span class="num">Nivel ' + (i + 1) + "</span><strong>" + n.nombre + "</strong>" +
       (est === "hecho" ? '<span class="etq ok">Aprobado</span>'
+        : est === "eximido" ? '<span class="etq sd">Eximido</span>'
         : est === "disponible" ? '<span class="etq sd">Disponible</span>'
         : est === "espera" ? '<span class="etq mal">En espera</span>'
         : '<span class="etq mal">Bloqueado</span>');
@@ -501,11 +505,15 @@ $("btnConsultar").addEventListener("click", async () => {
   try {
     const prog = await leerProgreso(dni);
     aprobados = prog.aprobados;
+    habilitados = prog.habilitados;
     desaprobados = prog.desaprobados;
     postulante.dni = dni;
+    const tope = nivelHabilitado();
+    const habilitado = tope > 0 && !aprobados.includes(NIVELES[tope].id)
+      ? "Capacitación te habilitó para rendir el nivel " + NIVELES[tope].nombre + "." : "";
     $("estadoDni").textContent = aprobados.length
-      ? "Niveles aprobados: " + NIVELES.filter((n) => aprobados.includes(n.id)).map((n) => n.nombre).join(", ") + "."
-      : "Sin exámenes aprobados. Empezás por Entrenador.";
+      ? ("Niveles aprobados: " + NIVELES.filter((n) => aprobados.includes(n.id)).map((n) => n.nombre).join(", ") + ". " + habilitado).trim()
+      : habilitado || "Sin exámenes aprobados. Empezás por Entrenador.";
     $("bloqueNiveles").classList.remove("oculto");
     pintarNiveles();
   } catch (e) {
@@ -721,9 +729,9 @@ function finalizar(motivo) {
   // El servidor corrige y guarda. keepalive permite que se envíe aunque se cierre la página.
   rpc("entregar_examen", { p_token: token, p_respuestas: respuestas, p_motivo: motivo })
     .then((r) => r.json().then((d) => { if (!r.ok) throw new Error(d.message || r.status); return d; }))
-    .then((resultado) => {
-      avisarWebhook(resultado);
-      mostrarResultado(resultado);
+    .then(() => {
+      avisarWebhook();
+      mostrarResultado();
     })
     .catch(() => mostrarError());
 }
@@ -743,11 +751,11 @@ function mostrarError() {
     '<p class="gris">Revisá tu conexión y avisale a tu encargado. No vuelvas a rendir hasta que lo confirme Capacitación.</p>';
 }
 
-function avisarWebhook(resultado) {
+function avisarWebhook() {
   if (!CONFIG.WEBHOOK_URL) return;
   const cuerpo = JSON.stringify({
     examen: "Ascenso " + marca.nombre, marca: marca.id, dni: postulante.dni, nivel: nivel.id, postulante,
-    motivo_cierre: motivoCierre, porcentaje: resultado.porcentaje, condicion: resultado.condicion, fin: new Date().toISOString()
+    motivo_cierre: motivoCierre, fin: new Date().toISOString()
   });
   try {
     if (navigator.sendBeacon) navigator.sendBeacon(CONFIG.WEBHOOK_URL, new Blob([cuerpo], { type: "application/json" }));
@@ -755,37 +763,27 @@ function avisarWebhook(resultado) {
   } catch (e) { /* opcional */ }
 }
 
-function mostrarResultado(d) {
+// El postulante no ve la nota ni si aprobó: solo que el examen terminó.
+function mostrarResultado() {
   $("examen").classList.add("oculto");
   $("pie").classList.add("oculto");
   $("aviso").classList.remove("ver");
   $("cabecera").classList.add("oculto");
   const base = String(motivoCierre).split(":")[0];
 
-  const siguiente = NIVELES[NIVELES.indexOf(nivel) + 1];
-  const aprobo = d.condicion === "Aprobado";
-  const titulo = aprobo ? "¡Felicitaciones, " + postulante.nombre + "!" : "Esta vez no alcanzó";
-  const mensaje = aprobo
-    ? (siguiente
-        ? "Aprobaste el nivel " + nivel.nombre + " y ya podés avanzar al nivel " + siguiente.nombre + ". ¡Seguí así!"
-        : "Completaste todos los niveles de " + marca.nombre + ". ¡Excelente trabajo!")
-    : (base === "salida" || base === "abandono"
-        ? "El examen se cerró porque saliste de la ventana. "
-        : base === "tiempo" ? "Se terminó el tiempo. " : "") +
-      "No te desanimes: repasá el manual y volvé a intentarlo.";
+  const mensaje = "Gracias, " + postulante.nombre + ". " +
+    (base === "salida" || base === "abandono"
+      ? "El examen se cerró porque saliste de la ventana. "
+      : base === "tiempo" ? "Se terminó el tiempo. " : "") +
+    "Tus respuestas quedaron registradas. Ya podés cerrar esta ventana.";
 
   const r = $("resultado");
   r.classList.remove("oculto");
   r.classList.add("tarjeta-res");
-  r.classList.toggle("aprobo", aprobo);
   r.innerHTML =
     '<p class="gris">' + marca.nombre + " · Nivel " + nivel.nombre + "</p>" +
-    '<div class="puntaje ' + (aprobo ? "ok" : "mal") + '" style="margin:1rem 0 .5rem">' +
-      (d.porcentaje === null ? "S/D" : d.porcentaje + "%") + "</div>" +
-    '<span class="etq ' + (aprobo ? "ok" : "mal") + '" style="font-size:.9rem">' + d.condicion + "</span>" +
-    '<h1 style="margin-top:1.5rem" id="resTitulo"></h1>' +
+    '<h1 style="margin-top:1rem">Examen finalizado</h1>' +
     '<p style="font-size:1.05rem" id="resMensaje"></p>';
-  $("resTitulo").textContent = titulo;
   $("resMensaje").textContent = mensaje;
 }
 </script>
