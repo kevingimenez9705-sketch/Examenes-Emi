@@ -316,13 +316,17 @@ function armarNiveles() {
 
 // Locales tal como figuran en el organigrama del Campus de Ascensos (data.js de ascensos-):
 // los nombres tienen que coincidir exactamente para que el resultado aparezca en el local correcto.
-const LOCALES_SABORES = ["Chilavert", "Caballito 1", "Lomas de Zamora 3", "Lomas de Zamora 4", "Lomas de Zamora 5", "Santa Fe 1", "Villa Urquiza", "Entre Rios", "Boedo", "Pellegrini", "Villa del Parque", "Liniers 1", "Liniers 2", "Ciudadela", "Pompeya", "Caballito 2", "Barracas", "Pueyrredon 1", "Pueyrredon 2", "Constitucion", "Flores", "Belgrano", "Lavalle 1", "Lavalle 2", "Tucuman", "Florida", "Retiro", "Jose C Paz 1", "Jose C Paz 2", "Del Viso", "Grand Bourg", "Don Torcuato", "Santos Lugares", "Bella Vista", "William Morris", "Cruce Castelar", "Loma Hermosa", "Hurlingham 1", "Hurlingham 2", "Caseros 1", "Caseros 2", "El Palomar", "Manuel Alberti", "Sourdeaux", "Tortuguitas", "Los Polvorines", "San Miguel 1", "San Miguel 2", "San Miguel 3", "Pilar 1", "Pilar 2", "Crovara", "Tapiales", "Laferrere 1", "Laferrere 2", "Gonzalez Catan", "La Plata 1", "La Plata 2", "La Plata 3", "La Plata 4", "Lezama", "Berazategui 1", "Berazategui 2", "Solano", "Varela", "Cruce Varela", "Varela 2", "Mar del Plata 1", "Mar del Plata 2", "Mar del Plata 3", "Mar del Plata 4", "Mar del Plata 5", "Adrogue", "Banfield", "Temperley 1", "Temperley 2", "Lanus 2", "Lanus 3", "Claypole", "Quilmes 1", "Quilmes 2", "Quilmes 3", "Wilde", "Gerli", "El Jaguel", "Monte Grande 1", "Monte Grande 2", "Tristan Suarez", "Glew", "Ezeiza", "Ciudadela (Mania)", "Isidro Casanova (Mania)", "Lanus 4", "Valentina Alsina", "Burzaco", "Zarate", "Escobar 1", "Maschwitz", "Boulogne", "Benavidez", "Escobar 2", "San Fernando", "San Isidro 1", "San Isidro 2", "Virreyes", "Tigre", "Pacheco 2", "Pte Saavedra", "Vicente Lopez", "Munro", "Villa Adelina", "Jose Leon Suarez", "Martinez", "Pacheco 1", "El Talar", "Olivos", "Garin", "Savio", "San Martin 1", "San Martin 2", "Villa Ballester 1", "Villa Ballester 2", "Rosario 1", "Rosario 2", "Rosario 3", "San Nicolas", "Ramos Mejia 1", "Ramos Mejia 2", "Ramos Mejia 3", "Haedo", "Ituzaingo", "Moron 1", "Moron 2", "Moron 3", "Moron 4", "Moron 5", "Lujan", "General Rodriguez", "Moreno 1", "Moreno 2", "Paso del Rey", "Merlo 1", "Merlo 2", "Merlo 3", "Rafael Castillo", "Padua", "Corrientes 1", "Corrientes 2", "Corrientes 3", "Corrientes 4", "Lomas del Mirador", "San Justo 1", "San Justo 2", "San Justo 3", "Parana", "Cordoba", "Santa Fe Capital"];
-const LOCALES_HEX = ["Avellaneda", "Wilde", "Pompeya", "Rosario", "Quilmes", "Monte Grande", "Lomas de Zamora", "Banfield", "La Plata", "Berazategui", "Solano", "Varela", "Glew", "Temperley", "Lanus", "Adrogué", "Florida", "Tucuman", "Once", "Callao", "Pueyrredon", "Pellegrini", "Castelar", "Merlo", "Ramos", "Moreno", "El Palomar", "Rodriguez", "Lujan", "Zarate", "Garin", "Laferrere", "Moron", "Crovara", "San Justo", "Polvorines", "Tortuguitas", "Pilar", "Alberti", "Jose C. Paz", "San Miguel", "Grand Bourg", "Talar", "Caballito", "Liniers", "Flores", "Flores 2", "Mataderos", "Loma Hermosa", "Hurlingham", "Caseros", "Munro", "José L. Suarez", "Olivos", "San Isidro", "Boulogne", "Villa Adelina", "Villa Ballester", "San Fernando", "Virreyes", "Pacheco", "Vicente Lopez", "Lezama", "Cordoba"];
+const LOCALES_SABORES = ["Chilavert", "Caballito 1", "Lomas de Zamora 3", "Lomas de Zamora 4", "Lomas de Zamora 5", "Santa Fe 1", "Villa Urquiza", "Entre Rios", "Boedo", "Pellegrini", "Villa del Parque", "Liniers 1", "Liniers 2", "Ciudadela", "Pompeya", "Caballito 2", "Barracas", "Pueyrredon 1", "Pueyrredon 2", "Constitucion", "Flores", "Belgrano", "Lavalle 1", "Lavalle 2", "Tucuman", "Florida", "Retiro", "Jose C Paz 1", "Jose C Paz 2", "Del Viso", "Grand Bourg", "Don Torcuato", "Santos Lugares", "Bella Vista", "William Morris", "Cruce Castelar", "Loma Hermosa", "Hurlingham 1", "Hurlingham 2", "Caseros 1", "Caseros 2", "El Palomar", "Manuel Alberti", "Sourdeaux", "Tortuguitas", "Los Polvorines", "San Miguel 1", "San Miguel 2", "San Miguel 3", "Pilar 1", "Pilar 2", "Crovara", "Tapiales", "Laferrere 1", "Laferrere 2", "Gonzalez Catan", "La Plata 1", "La Plata 2", "La Plata 3", "La Plata 4", "Lezama", "Berazategui 1", "Berazategui 2", "Solano", "Varela", "Cruce Varela", "Varela 2", "Mar del Plata 1", "Mar del Plata 2", "Mar del Plata 3", "Mar del Plata 4", "Mar del Plata 5", "Adrogue", "Banfield", "Temperley 1", "Temperley 2", "Lanus 2", "Lanus 3", "Claypole", "Quilmes 1", "Quilmes 2", "Quilmes 3", "Wilde", "Gerli", "El Jaguel", "Monte Grande 1", "Monte Grande 2", "Tristan Suarez", "Glew", "Ezeiza", "Lanus 4", "Valentina Alsina", "Burzaco", "Zarate", "Escobar 1", "Maschwitz", "Boulogne", "Benavidez", "Escobar 2", "San Fernando", "San Isidro 1", "San Isidro 2", "Virreyes", "Tigre", "Pacheco 2", "Pte Saavedra", "Vicente Lopez", "Munro", "Villa Adelina", "Jose Leon Suarez", "Martinez", "Pacheco 1", "El Talar", "Olivos", "Garin", "Savio", "San Martin 1", "San Martin 2", "Villa Ballester 1", "Villa Ballester 2", "Rosario 1", "Rosario 2", "Rosario 3", "San Nicolas", "Ramos Mejia 1", "Ramos Mejia 2", "Ramos Mejia 3", "Haedo", "Ituzaingo", "Moron 1", "Moron 2", "Moron 3", "Moron 4", "Moron 5", "Lujan", "General Rodriguez", "Moreno 1", "Moreno 2", "Paso del Rey", "Merlo 1", "Merlo 2", "Merlo 3", "Rafael Castillo", "Padua", "Corrientes 1", "Corrientes 2", "Corrientes 3", "Corrientes 4", "Lomas del Mirador", "San Justo 1", "San Justo 2", "San Justo 3", "Parana", "Cordoba", "Santa Fe Capital", "Campana", "Flores 2", "Lugano", "Moreno 3", "Obelisco", "Recoleta", "Villa Real", "Villa Soldati"];
+const LOCALES_HEX = ["Avellaneda", "Wilde", "Pompeya", "Rosario", "Quilmes", "Monte Grande", "Lomas de Zamora", "Banfield", "La Plata", "Berazategui", "Solano", "Varela", "Glew", "Temperley", "Lanus", "Adrogué", "Florida", "Tucuman", "Once", "Callao", "Pueyrredon", "Pellegrini", "Castelar", "Merlo", "Ramos", "Moreno", "El Palomar", "Rodriguez", "Lujan", "Zarate", "Garin", "Laferrere", "Moron", "Crovara", "San Justo", "Polvorines", "Tortuguitas", "Pilar", "Alberti", "Jose C. Paz", "San Miguel", "Grand Bourg", "Talar", "Caballito", "Liniers", "Flores", "Flores 2", "Mataderos", "Loma Hermosa", "Hurlingham", "Caseros", "Munro", "José L. Suarez", "Olivos", "San Isidro", "Boulogne", "Villa Adelina", "Villa Ballester", "San Fernando", "Virreyes", "Pacheco", "Vicente Lopez", "Lezama", "Cordoba", "Chilavert", "Obelisco", "San Martin"];
+// Mania rinde con la marca "sabores" en el servidor: el "(Mania)" distingue sus locales de los de Sabores.
+const LOCALES_MANIA = ["Ciudadela (Mania)", "Isidro Casanova (Mania)", "Monte Castro (Mania)"];
 
-// Los ids de marca son los mismos que usa el Campus (sabores / hex).
+// "examen" es la marca que usan el servidor y el Campus (sabores / hex): Empanada Mania rinde
+// los mismos exámenes que Sabores y comparte su progreso por DNI.
 const MARCAS = [
-  { id:"sabores", nombre:"Sabores Express",       locales: LOCALES_SABORES, niveles: armarNiveles() },
-  { id:"hex",     nombre:"Hamburguesas Extremas", locales: LOCALES_HEX,     niveles: armarNiveles() }
+  { id:"sabores", examen:"sabores", nombre:"Sabores Express",       locales: LOCALES_SABORES, niveles: armarNiveles() },
+  { id:"hex",     examen:"hex",     nombre:"Hamburguesas Extremas", locales: LOCALES_HEX,     niveles: armarNiveles() },
+  { id:"mania",   examen:"sabores", nombre:"Empanada Mania",        locales: LOCALES_MANIA,   niveles: armarNiveles() }
 ];
 const paramMarca = new URLSearchParams(location.search).get("marca");
 let marca = MARCAS.find((m) => m.id === (paramMarca === "extremas" ? "hex" : paramMarca)) || MARCAS[0];
@@ -412,7 +416,7 @@ function limpiarDni(v) { return String(v).replace(/\D/g, ""); }
 
 // Devuelve { aprobados: [niveles], habilitados: [niveles], desaprobados: { nivel: fecha ISO del último intento no aprobado } }.
 async function leerProgreso(dni) {
-  const r = await rpc("estado_dni", { p_marca: marca.id, p_dni: dni });
+  const r = await rpc("estado_dni", { p_marca: marca.examen, p_dni: dni });
   if (!r.ok) throw new Error("Supabase " + r.status);
   const d = (await r.json()) || {};
   return { aprobados: d.aprobados || [], habilitados: d.habilitados || [], desaprobados: d.desaprobados || {} };
@@ -539,7 +543,7 @@ $("btnComenzar").addEventListener("click", async () => {
   btn.textContent = "Preparando examen…";
   let datos;
   try {
-    const r = await rpc("iniciar_examen", { p_marca: marca.id, p_dni: postulante.dni, p_nivel: nivel.id,
+    const r = await rpc("iniciar_examen", { p_marca: marca.examen, p_dni: postulante.dni, p_nivel: nivel.id,
       p_nombre: postulante.nombre, p_apellido: postulante.apellido, p_local: postulante.local, p_correo: postulante.correo });
     datos = await r.json();
     if (!r.ok) throw new Error(datos.message || "Supabase " + r.status);
@@ -754,7 +758,7 @@ function mostrarError() {
 function avisarWebhook() {
   if (!CONFIG.WEBHOOK_URL) return;
   const cuerpo = JSON.stringify({
-    examen: "Ascenso " + marca.nombre, marca: marca.id, dni: postulante.dni, nivel: nivel.id, postulante,
+    examen: "Ascenso " + marca.nombre, marca: marca.examen, dni: postulante.dni, nivel: nivel.id, postulante,
     motivo_cierre: motivoCierre, fin: new Date().toISOString()
   });
   try {
