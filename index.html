@@ -303,14 +303,15 @@ const CONFIG = {
   SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5dmp1bmZnb2Jpc3JmZGNjcm5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNTc5MTYsImV4cCI6MjEwNTgzMzkxNn0.-glFu4WVy_1c2-gBgu85Q31gwPZzxZmOlKAh6W1KZ-k"   // la tabla no es accesible con esta key: solo las funciones de supabase/migrations
 };
 
-// Mismo criterio para todas las marcas: 20 preguntas, 15 minutos y 80% para aprobar
+// Mismo criterio para todas las marcas: 15 minutos y 80% para aprobar. La cantidad de preguntas
+// es la del banco de cada marca en supabase/migrations (entrenador, encargado, gerente).
 // (el servidor es el que controla tiempo y nota; esto es solo para mostrar las reglas).
 // Orden = orden de habilitación. Cada nivel se habilita al aprobar el anterior.
-function armarNiveles() {
+function armarNiveles(cantidades = [20, 20, 20]) {
   return [
-    { id:"entrenador", nombre:"Entrenador", minutos:15, aprobado:80, cantidad:20 },
-    { id:"encargado",  nombre:"Encargado",  minutos:15, aprobado:80, cantidad:20 },
-    { id:"gerente",    nombre:"Gerente",    minutos:15, aprobado:80, cantidad:20 }
+    { id:"entrenador", nombre:"Entrenador", minutos:15, aprobado:80, cantidad:cantidades[0] },
+    { id:"encargado",  nombre:"Encargado",  minutos:15, aprobado:80, cantidad:cantidades[1] },
+    { id:"gerente",    nombre:"Gerente",    minutos:15, aprobado:80, cantidad:cantidades[2] }
   ];
 }
 
@@ -326,7 +327,7 @@ const LOCALES_HEX = ["Avellaneda", "Wilde", "Pompeya", "Rosario", "Quilmes", "Mo
 // los mismos exámenes que Sabores y comparte su progreso por DNI.
 const MARCAS = [
   { id:"sabores", examen:"sabores", nombre:"Sabores Express",       locales: LOCALES_SABORES, niveles: armarNiveles() },
-  { id:"hex",     examen:"hex",     nombre:"Hamburguesas Extremas", locales: LOCALES_HEX,     niveles: armarNiveles() },
+  { id:"hex",     examen:"hex",     nombre:"Hamburguesas Extremas", locales: LOCALES_HEX,     niveles: armarNiveles([18, 25, 22]) },
   { id:"mania",   examen:"sabores", nombre:"Empanada Mania",        locales: LOCALES_MANIA,   niveles: armarNiveles() }
 ];
 const paramMarca = new URLSearchParams(location.search).get("marca");
