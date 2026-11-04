@@ -329,8 +329,8 @@ const LOCALES_HEX = ["Avellaneda", "Wilde", "Pompeya", "Rosario", "Quilmes", "Mo
 const MARCAS = [
   { id:"sabores",            examen:"sabores", nombre:"Sabores Express",       locales: LOCALES_SABORES,           niveles: armarNiveles([20, 18, 20]) },
   { id:"hex",                examen:"hex",     nombre:"Hamburguesas Extremas", locales: LOCALES_HEX,               niveles: armarNiveles([18, 25, 22]) },
-  { id:"mania",              examen:"mania",   nombre:"Mania Propios",         locales: LOCALES_MANIA_PROPIOS,     niveles: armarNiveles([19]) },
-  { id:"mania-franquicias",  examen:"mania",   nombre:"Mania Franquicias",     locales: LOCALES_MANIA_FRANQUICIAS, niveles: armarNiveles([19]) }
+  { id:"mania",              examen:"mania",   nombre:"Mania Propios",         locales: LOCALES_MANIA_PROPIOS,     niveles: armarNiveles([21]) },
+  { id:"mania-franquicias",  examen:"mania",   nombre:"Mania Franquicias",     locales: LOCALES_MANIA_FRANQUICIAS, niveles: armarNiveles([21]) }
 ];
 const paramMarca = new URLSearchParams(location.search).get("marca");
 let marca = MARCAS.find((m) => m.id === (paramMarca === "extremas" ? "hex" : paramMarca)) || MARCAS[0];
