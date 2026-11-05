@@ -32,7 +32,7 @@ update public.preguntas set texto = 'Si debemos activar 4 cestas de papas, ¿cu�
 
 -- ---------- Encargado ----------
 delete from public.preguntas where marca = 'hex' and nivel = 'encargado' and id in (402, 403, 411, 429);
-update public.preguntas set opciones = '["Latte 90% leche y 10% café, Cortado 90% café y 10% leche, Expresso 100% café","Latte 90% café y 10% leche, Cortado 90% leche y 10% café, Expresso 100% café","Latte 50% leche y 50% café, Cortado 100% café, Expresso 90% café y 10% leche","Latte 50% leche y 50% café, Cortado 90% café y 10% leche, Expresso 100% café"]'::jsonb
+update public.preguntas set opciones = '["Latte 90% leche y 10% café, Cortado 90% café y 10% leche, Expresso 100% café","Latte 90% café y 10% leche, Cortado 90% leche y 10% café, Expresso 100% café","Latte 50% leche y 50% café, Cortado 100% café, Expresso 90% café y 10% leche","Latte 50% leche y 50% café, Cortado 90% café y 10% café, Expresso 100% café"]'::jsonb
  where marca = 'hex' and nivel = 'encargado' and id = 428;
 
 -- ---------- Preguntas nuevas ----------
