@@ -237,6 +237,7 @@ thead th{background:#F7FAFF;font-weight:700;color:var(--gris)}
       <button class="btn" id="btnConsultar">Consultar</button>
     </div>
     <p class="gris" id="estadoDni" style="font-size:.85rem;margin-top:.5rem"></p>
+    <a class="btn sec oculto" id="lnkManual" href="#" style="display:inline-block;margin-top:.75rem;text-decoration:none">📘 Ver mi manual operativo</a>
 
     <div id="bloqueNiveles" class="oculto">
       <div class="niveles" id="niveles"></div>
@@ -415,6 +416,7 @@ function elegirMarca(m) {
   desaprobados = {};
   $("bloqueNiveles").classList.add("oculto");
   $("estadoDni").textContent = "";
+  mostrarManual(null);
   pintarMarcas();
   try { history.replaceState(null, "", "?marca=" + m.id); } catch (e) { /* sin historial */ }
 }
@@ -504,8 +506,17 @@ pintarMarcas();
 
 $("f_dni").addEventListener("input", () => {
   $("f_dni").value = limpiarDni($("f_dni").value).slice(0, 8);
-  $("bloqueNiveles").classList.add("oculto"); $("estadoDni").textContent = ""; });
+  $("bloqueNiveles").classList.add("oculto"); $("estadoDni").textContent = ""; mostrarManual(null); });
 $("f_dni").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btnConsultar").click(); });
+
+// Manual operativo interactivo (Sabores / Extremas): abre personalizado según el DNI
+const MANUALES = { sabores: "manual/sabores.html", hex: "manual/extremas.html" };
+function mostrarManual(dni) {
+  const a = $("lnkManual"), url = MANUALES[marca.examen];
+  if (!dni || !url) { a.classList.add("oculto"); return; }
+  a.href = url + "?dni=" + encodeURIComponent(dni);
+  a.classList.remove("oculto");
+}
 
 $("btnConsultar").addEventListener("click", async () => {
   const dni = limpiarDni($("f_dni").value);
@@ -526,6 +537,7 @@ $("btnConsultar").addEventListener("click", async () => {
       ? ("Niveles aprobados: " + NIVELES.filter((n) => aprobados.includes(n.id)).map((n) => n.nombre).join(", ") + ". " + habilitado).trim()
       : habilitado || "Sin exámenes aprobados. Empezás por Entrenador.";
     $("bloqueNiveles").classList.remove("oculto");
+    mostrarManual(dni);
     pintarNiveles();
   } catch (e) {
     $("estadoDni").textContent = "No se pudo consultar el progreso. Probá de nuevo.";
